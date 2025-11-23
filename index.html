@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PathfinderBD</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+     crossorigin=""/>
+    
+    <!-- Leaflet Routing Machine CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+     crossorigin=""></script>
+     
+    <!-- Leaflet Routing Machine JS -->
+    <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;600&display=swap" rel="stylesheet">
+
+    <style>
+        body, html { height: 100%; margin: 0; background-color: #0a0a0a; font-family: 'Space Grotesk', sans-serif; overflow: hidden; }
+        #map { height: 100%; width: 100%; z-index: 0; background: #1a1a1a; }
+        
+        /* Dark Scrollbar */
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #1a1a1a; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #00e676; }
+
+        /* Glassmorphism Panel */
+        .glass-panel {
+            background: rgba(10, 10, 10, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Blinking Animation Class (Applied Dynamically) */
+        .blink-active .inner-dot {
+            animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+        }
+        .blink-active .outer-ring {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            opacity: 0.5;
+        }
+
+        @keyframes ping {
+            75%, 100% { transform: scale(2); opacity: 0; }
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+
+        /* Suggestion Blinking White Overlay */
+        @keyframes blink-white {
+            0%, 100% { opacity: 0; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.3); }
+        }
+        .suggestion-blink {
+            animation: blink-white 2s infinite;
+        }
+
+        /* Popup Customization */
+        .leaflet-popup-content-wrapper {
+            background: rgba(20, 20, 20, 0.95);
+            backdrop-filter: blur(5px);
+            color: #fff;
+            border: 1px solid #333;
+            border-radius: 8px;
+        }
+        .leaflet-popup-tip {
+            background: rgba(20, 20, 20, 0.95);
+        }
+        .leaflet-container a.leaflet-popup-close-button {
+            color: #999;
+        }
+        .leaflet-container a.leaflet-popup-close-button:hover {
+            color: #fff;
+        }
+        
+        /* Leaflet Control Customization (Matched to UI) */
+        .leaflet-control-layers,
+        .leaflet-bar {
+            border: none !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+        }
+
+        .leaflet-control-layers,
+        .leaflet-bar a {
+            background: rgba(10, 10, 10, 0.85) !important;
+            backdrop-filter: blur(12px) !important;
+            color: #fff !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            border-radius: 8px !important;
+            transition: all 0.2s ease;
+        }
+
+        /* Zoom Control Grouping fixes */
+        .leaflet-bar a {
+            border-radius: 0 !important;
+        }
+        .leaflet-bar a:first-child {
+            border-top-left-radius: 8px !important;
+            border-top-right-radius: 8px !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+        }
+        .leaflet-bar a:last-child {
+            border-bottom-left-radius: 8px !important;
+            border-bottom-right-radius: 8px !important;
+            border-bottom: none !important;
+        }
+
+        .leaflet-bar a:hover {
+            background: rgba(255, 255, 255, 0.15) !important;
+            color: #00e676 !important;
+        }
+
+        /* Layer Control Content */
+        .leaflet-control-layers-expanded {
+            background: rgba(10, 10, 10, 0.95) !important;
+            padding: 12px !important;
+            color: #eee !important;
+            font-family: 'Space Grotesk', sans-serif !important;
+            font-size: 12px !important;
+            border-radius: 12px !important;
+        }
+        
+        /* Hide default routing container text */
+        .leaflet-routing-container {
+            display: none;
+        }
+
+        /* Autocomplete Dropdown */
+        .suggestions-box-style {
+            display: none;
+            position: absolute;
+            background: #1a1a1a;
+            width: 100%;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 50;
+            border: 1px solid #333;
+            border-radius: 0 0 8px 8px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+        }
+        .suggestion-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            border-bottom: 1px solid #333;
+        }
+        .suggestion-item:hover {
+            background: #00e676;
+            color: #000 !important; /* Forced black text on hover */
+        }
+        
+        .suggestion-active {
+            background: #00e676;
+            color: #000 !important; /* Forced black text on active/keyboard selection */
+        }
+
+        /* Suggestion Text Specifics for Custom Search */
+        .suggestion-item:hover .suggestion-text-main,
+        .suggestion-active .suggestion-text-main {
+            color: #000 !important;
+        }
+        .suggestion-item:hover .suggestion-text-sub,
+        .suggestion-active .suggestion-text-sub {
+            color: #333 !important; /* Dark grey for subtitle to contrast with black main text */
+        }
+
+        .itinerary-dot {
+            position: relative;
+        }
+        .itinerary-dot::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            bottom: -16px;
+            width: 1px;
+            height: 16px;
+            background: #333;
+            transform: translateX(-50%);
+        }
+        .itinerary-item:last-child .itinerary-dot::after {
+            display: none;
+        }
+        
+        /* Hide scrollbar for horizontal scrolling */
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Draggable Container Styles */
+        #filterContainer {
+            cursor: grab;
+            user-select: none;
+        }
+        #filterContainer.active {
+            cursor: grabbing;
+        }
+
+        /* Draggable List Items */
+        .draggable-item {
+            cursor: grab;
+        }
+        .draggable-item:active {
+            cursor: grabbing;
+        }
+        .drag-over {
+            border-top: 2px solid #00e676;
+            background: rgba(0, 230, 118, 0.1);
+        }
+        
+        /* Sidebar transition */
+        #sidebar {
+            transition: transform 0.5s ease-out, max-height 0.3s ease;
+        }
+
+        /* Custom Cursor for Map Picking (Desktop) */
+        .cursor-map-pick {
+            cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 24 24'%3E%3Cpath d='M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zM12 11.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z' fill='%2300e676' stroke='%23ffffff' stroke-width='2' shadow='0 2px 4px rgba(0,0,0,0.5)'/%3E%3C/svg%3E") 16 32, crosshair !important;
+        }
+    </style>
+</head>
+<body class="text-gray-200">
+
+    <!-- Splash Screen (Courtesy Panel) - Simplified -->
+    <div id="courtesySplash" class="fixed bottom-10 left-1/2 transform -translate-x-1/2 z-[5000] transition-all duration-1000 opacity-100 pointer-events-none select-none">
+        <div class="bg-black/80 backdrop-blur-xl border border-gray-700/50 px-6 py-3 rounded-full shadow-2xl text-center">
+            <p class="text-[10px] text-gray-300 uppercase tracking-[0.2em] font-medium whitespace-nowrap">Crafted by Tanvir</p>
+        </div>
+    </div>
+
+    <!-- Map Picking Toast (Desktop) -->
+    <div id="pickToast" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-[2000] bg-green-600 text-white px-4 py-2 rounded-full shadow-lg text-xs font-bold uppercase tracking-widest hidden animate-bounce">
+        Click on map to select location
+    </div>
+
+    <!-- Mobile Picking UI -->
+    <!-- Center Pin (Fixed) -->
+    <div id="mobileCenterPin" class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[1500] pointer-events-none hidden transition-all duration-200">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-green-500 drop-shadow-2xl" viewBox="0 0 24 24" fill="currentColor">
+            <path fill-rule="evenodd" d="M11.54 22.351l.07.04.028.016a.76.76 0 00.723 0l.028-.015.071-.041a16.975 16.975 0 001.144-.742 19.58 19.58 0 002.683-2.282c1.944-1.99 3.963-4.98 3.963-8.827a8.25 8.25 0 00-16.5 0c0 3.846 2.02 6.837 3.963 8.827a19.58 19.58 0 002.682 2.282 16.975 16.975 0 001.145.742zM12 13.5a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" />
+        </svg>
+        <div class="w-1 h-1 bg-black/50 rounded-full absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1 blur-[1px]"></div>
+    </div>
+    <!-- Confirm Button (Mobile) -->
+    <button id="mobileConfirmBtn" class="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-[2000] bg-green-600 text-white px-8 py-3 rounded-full shadow-[0_0_20px_rgba(0,230,118,0.4)] font-bold uppercase tracking-wide hidden hover:bg-green-500 transition-all active:scale-95 flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+        Confirm Location
+    </button>
+
+    <!-- Sidebar (Floating Panel) -->
+    <div id="sidebar" class="absolute top-4 left-4 w-80 z-[1000] transform transition-transform duration-500 ease-out -translate-x-[110%] md:translate-x-0 shadow-2xl flex flex-col glass-panel rounded-2xl max-h-[calc(100vh-2rem)]">
+        
+        <!-- Header (Always Visible) -->
+        <div id="sidebar-header" class="p-5 border-b border-gray-800 shrink-0 flex justify-between items-center md:items-start transition-colors duration-300">
+            <div class="flex-1 text-center md:text-left pr-8 md:pr-0">
+                <!-- Updated Title with Gradient Style -->
+                <h1 class="text-2xl font-black tracking-tighter flex items-center justify-center md:justify-start gap-1 uppercase" style="font-family: 'Space Grotesk', sans-serif;">
+                    <span class="text-white">PATHFINDER</span>
+                    <span class="bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-blue-500 to-pink-500">BD</span>
+                </h1>
+                <p class="text-[10px] text-gray-400 uppercase tracking-widest mt-1">Explore Bangladesh</p>
+            </div>
+            
+            <div class="flex gap-2 absolute right-5 top-5 md:static">
+                <!-- Collapse Toggle (Desktop) -->
+                <button id="toggleSidebarContent" onclick="toggleSidebarBody()" class="hidden md:block text-gray-400 hover:text-white transition-colors p-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transform transition-transform duration-300" id="toggleIcon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                    </svg>
+                </button>
+                
+                <!-- Close Sidebar (Mobile) -->
+                <button id="closeSidebar" class="md:hidden text-gray-400 hover:text-white transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Collapsible Content Body -->
+        <div id="sidebar-body" class="flex-1 flex flex-col overflow-y-auto custom-scroll transition-all duration-300">
+            
+            <!-- Controls Container -->
+            <div class="p-5 pt-3 border-b border-gray-800 shrink-0">
+                <!-- Origin Search -->
+                <div class="relative mb-3">
+                    <label class="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Start Journey From</label>
+                    <div class="relative flex gap-1">
+                        <input type="text" id="originInput" placeholder="Search District (Default: Dhaka)" 
+                               class="w-full bg-white/5 border border-gray-700 rounded-l px-3 py-2 text-sm text-white focus:outline-none focus:border-green-500 transition-colors">
+                        
+                        <!-- Map Pick Button -->
+                        <button onclick="enableMapPick('start')" class="bg-gray-800 hover:bg-green-600 text-gray-300 hover:text-white px-3 border border-gray-700 rounded-r transition-colors" title="Pick on Map">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+
+                        <button id="resetOrigin" class="absolute right-10 top-2 text-gray-500 hover:text-white hidden">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div id="suggestions-box" class="suggestions-box-style custom-scroll"></div>
+                </div>
+
+                <!-- Custom Destination Search -->
+                <div class="relative mb-4">
+                    <label class="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Add Custom Destination</label>
+                    <div class="relative flex gap-1">
+                        <input type="text" id="destSearchInput" placeholder="Search place (e.g. Uttara)" 
+                               class="w-full bg-white/5 border border-gray-700 rounded-l px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors placeholder-gray-600">
+                        
+                        <!-- Map Pick Button -->
+                        <button onclick="enableMapPick('dest')" class="bg-gray-800 hover:bg-blue-600 text-gray-300 hover:text-white px-3 border border-gray-700 rounded-r transition-colors" title="Pick on Map">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+
+                        <!-- Loading Spinner -->
+                        <div id="destLoading" class="absolute right-12 top-2.5 hidden">
+                            <svg class="animate-spin h-4 w-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div id="dest-suggestions-box" class="suggestions-box-style custom-scroll"></div>
+                </div>
+                
+                <!-- Open Destination Panel Box (Now targets Journey Panel) -->
+                <button onclick="toggleJourneyPanel()" class="w-full mb-4 p-3 bg-gradient-to-r from-gray-800 to-gray-900 border border-gray-700 rounded-lg flex items-center justify-between group hover:border-green-500 transition-all shadow-lg relative overflow-hidden">
+                    <div class="absolute inset-0 bg-green-500/10 translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-500"></div>
+                    <div class="relative flex items-center gap-3">
+                        <div class="bg-green-500/20 p-2 rounded-md text-green-400 group-hover:text-white group-hover:bg-green-500 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                            </svg>
+                        </div>
+                        <div class="text-left">
+                            <span class="block text-[10px] text-gray-400 uppercase tracking-wider font-bold">View Plan</span>
+                            <span class="block text-sm font-bold text-white">Current Journey</span>
+                        </div>
+                    </div>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-500 group-hover:text-white transform group-hover:translate-y-1 transition-all relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+
+                <!-- Current Journey Panel (Hidden by default) -->
+                <div id="journey-panel" class="hidden mb-4 p-3 bg-white/5 rounded border border-green-500/30 transition-all">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="text-xs font-bold text-green-400 uppercase">Current Journey</h3>
+                        <div class="flex gap-1 opacity-0 transition-opacity duration-300" id="journey-controls">
+                             <button onclick="optimizeRoute()" class="text-blue-400 hover:text-blue-300 p-1 rounded hover:bg-blue-500/20" title="Optimize Route">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                            </button>
+                            <!-- Export JSON -->
+                            <button onclick="exportJourney()" class="text-gray-400 hover:text-white p-1 rounded hover:bg-gray-700" title="Export Journey">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                            </button>
+                            <!-- Import JSON -->
+                            <button onclick="document.getElementById('importFile').click()" class="text-gray-400 hover:text-white p-1 rounded hover:bg-gray-700" title="Import Journey">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                </svg>
+                            </button>
+                            <input type="file" id="importFile" hidden accept=".json" onchange="importJourney(this)">
+                            
+                            <button onclick="clearRoute()" class="text-red-400 hover:text-red-300 p-1 rounded hover:bg-red-500/20" title="Reset">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="journey-list" class="space-y-1 max-h-32 overflow-y-auto custom-scroll mb-3">
+                        <!-- Injected by JS -->
+                    </div>
+                    <!-- Journey Stats -->
+                    <div id="journey-stats" class="hidden pt-3 border-t border-gray-700 text-gray-300 grid grid-cols-2 gap-x-4 gap-y-2">
+                        <!-- Injected by JS -->
+                    </div>
+                </div>
+
+                <!-- Filter Tabs with Arrows -->
+                <div class="relative flex items-center gap-1">
+                    <button id="scrollLeft" class="p-1 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-colors z-10">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                        </svg>
+                    </button>
+                    
+                    <div id="filterContainer" class="flex gap-2 overflow-x-auto scrollbar-hide scroll-smooth w-full px-1">
+                        <!-- Buttons updated with specific colors -->
+                        <button onclick="filterLocations('all')" class="whitespace-nowrap text-[10px] px-3 py-1 rounded-full bg-white text-black font-bold transition-all shrink-0 shadow-[0_0_10px_rgba(255,255,255,0.3)]">All</button>
+                        
+                        <button onclick="filterLocations('Nature')" class="whitespace-nowrap text-[10px] px-3 py-1 rounded-full bg-[#10b981]/20 text-[#10b981] hover:bg-[#10b981]/30 transition-all shrink-0 border border-transparent">Nature</button>
+                        
+                        <button onclick="filterLocations('Beach')" class="whitespace-nowrap text-[10px] px-3 py-1 rounded-full bg-[#3b82f6]/20 text-[#3b82f6] hover:bg-[#3b82f6]/30 transition-all shrink-0 border border-transparent">Beach</button>
+                        
+                        <button onclick="filterLocations('Hill')" class="whitespace-nowrap text-[10px] px-3 py-1 rounded-full bg-[#f59e0b]/20 text-[#f59e0b] hover:bg-[#f59e0b]/30 transition-all shrink-0 border border-transparent">Hill</button>
+                        
+                        <button onclick="filterLocations('Heritage')" class="whitespace-nowrap text-[10px] px-3 py-1 rounded-full bg-[#ef4444]/20 text-[#ef4444] hover:bg-[#ef4444]/30 transition-all shrink-0 border border-transparent">Heritage</button>
+                    </div>
+                    
+                    <button id="scrollRight" class="p-1 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-colors z-10">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- Toggle: Suggest Nearby -->
+                 <div class="flex items-center justify-between mt-3">
+                    <span class="text-[10px] text-gray-400">Suggest Attractions</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="nearbyToggle" class="sr-only peer">
+                        <div class="w-7 h-4 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-green-600"></div>
+                    </label>
+                </div>
+
+                <!-- Toggle: Show Attractions -->
+                 <div class="flex items-center justify-between mt-2 mb-2">
+                    <span class="text-[10px] text-gray-400">Show Tourist Spots</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="attractionsToggle" class="sr-only peer" checked>
+                        <div class="w-7 h-4 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-green-600"></div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Suggestions Info Panel -->
+            <div id="nearby-info" class="hidden bg-indigo-900/30 border-b border-indigo-500/30 p-3">
+                <p class="text-xs text-indigo-200 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-indigo-400 rounded-full animate-pulse"></span>
+                    Found interesting places along your route!
+                </p>
+            </div>
+
+            <!-- Location List -->
+            <div class="p-4 space-y-2" id="location-list">
+                <!-- Items injected by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Toggle -->
+    <button id="openSidebar" class="absolute top-4 left-4 z-[3000] bg-black/50 backdrop-blur text-white p-2 rounded-full border border-gray-700 md:hidden hover:bg-green-600/20 hover:text-green-400 transition-all shadow-lg cursor-pointer">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+    </button>
+
+    <!-- Map -->
+    <div id="map"></div>
+
+    <script>
+        // ... existing code ... (Districts, Locations, Map Init, GeoJSON)
+        // --- Data: 64 Districts for Search ---
+        const districts = [
+            {name: "Dhaka", lat: 23.8103, lng: 90.4125}, {name: "Chittagong", lat: 22.3569, lng: 91.7832}, {name: "Khulna", lat: 22.8456, lng: 89.5403}, {name: "Rajshahi", lat: 24.3636, lng: 88.6241},
+            {name: "Barisal", lat: 22.7010, lng: 90.3535}, {name: "Sylhet", lat: 24.8949, lng: 91.8687}, {name: "Rangpur", lat: 25.7439, lng: 89.2752}, {name: "Mymensingh", lat: 24.7471, lng: 90.4203},
+            {name: "Comilla", lat: 23.4607, lng: 91.1809}, {name: "Gazipur", lat: 24.0023, lng: 90.4264}, {name: "Narayanganj", lat: 23.6238, lng: 90.5000}, {name: "Tangail", lat: 24.2513, lng: 89.9167},
+            {name: "Bogra", lat: 24.8481, lng: 89.3730}, {name: "Dinajpur", lat: 25.6217, lng: 88.6355}, {name: "Jessore", lat: 23.1634, lng: 89.2182}, {name: "Cox's Bazar", lat: 21.4272, lng: 91.9712},
+            {name: "Bagerhat", lat: 22.6516, lng: 89.7859}, {name: "Bandarban", lat: 22.1953, lng: 92.2184}, {name: "Barguna", lat: 22.1539, lng: 90.1250}, {name: "Bhola", lat: 22.6859, lng: 90.6481},
+            {name: "Brahmanbaria", lat: 23.9571, lng: 91.1119}, {name: "Chandpur", lat: 23.2321, lng: 90.6631}, {name: "Chuadanga", lat: 23.6402, lng: 88.8418}, {name: "Faridpur", lat: 23.6071, lng: 89.8429},
+            {name: "Feni", lat: 23.0159, lng: 91.3976}, {name: "Gaibandha", lat: 25.3288, lng: 89.5281}, {name: "Gopalganj", lat: 23.0051, lng: 89.8265}, {name: "Habiganj", lat: 24.3749, lng: 91.4155},
+            {name: "Jamalpur", lat: 24.9375, lng: 89.9378}, {name: "Jhalokati", lat: 22.6406, lng: 90.1987}, {name: "Jhenaidah", lat: 23.5450, lng: 89.1726}, {name: "Joypurhat", lat: 25.1028, lng: 89.0278},
+            {name: "Khagrachhari", lat: 23.1193, lng: 91.9847}, {name: "Kishoreganj", lat: 24.4449, lng: 90.7766}, {name: "Kurigram", lat: 25.8054, lng: 89.6362}, {name: "Kushtia", lat: 23.9013, lng: 89.1205},
+            {name: "Lakshmipur", lat: 22.9425, lng: 90.8282}, {name: "Lalmonirhat", lat: 25.9165, lng: 89.4532}, {name: "Madaripur", lat: 23.1641, lng: 90.1897}, {name: "Magura", lat: 23.4873, lng: 89.4199},
+            {name: "Manikganj", lat: 23.8644, lng: 90.0047}, {name: "Meherpur", lat: 23.7622, lng: 88.6318}, {name: "Moulvibazar", lat: 24.4829, lng: 91.7774}, {name: "Munshiganj", lat: 23.5422, lng: 90.5305},
+            {name: "Naogaon", lat: 24.7936, lng: 88.9318}, {name: "Narail", lat: 23.1725, lng: 89.5127}, {name: "Narsingdi", lat: 23.9322, lng: 90.7154}, {name: "Natore", lat: 24.4206, lng: 89.0003},
+            {name: "Netrokona", lat: 24.8710, lng: 90.7277}, {name: "Nilphamari", lat: 25.9318, lng: 88.8561}, {name: "Noakhali", lat: 22.8696, lng: 91.0993}, {name: "Pabna", lat: 24.0063, lng: 89.2372},
+            {name: "Panchagarh", lat: 26.3411, lng: 88.5542}, {name: "Patuakhali", lat: 22.3596, lng: 90.3299}, {name: "Pirojpur", lat: 22.5841, lng: 89.9720}, {name: "Rajbari", lat: 23.7574, lng: 89.6254},
+            {name: "Rangamati", lat: 22.6533, lng: 92.1789}, {name: "Satkhira", lat: 22.7185, lng: 89.0705}, {name: "Shariatpur", lat: 23.2423, lng: 90.4348}, {name: "Sherpur", lat: 25.0205, lng: 90.0153},
+            {name: "Sirajganj", lat: 24.4534, lng: 89.7008}, {name: "Sunamganj", lat: 25.0658, lng: 91.3950}, {name: "Thakurgaon", lat: 26.0337, lng: 88.4617}
+        ];
+
+        // --- Data: Tourist Destinations (Expanded) ---
+        const locations = [
+            // ... (Keeping all existing locations)
+            { name: "Sundarbans", coords: [21.9497, 89.1833], type: "Nature", color: "#10b981", desc: "World's largest mangrove forest." },
+            { name: "Ratargul Swamp", coords: [25.0034, 91.9331], type: "Nature", color: "#10b981", desc: "The only freshwater swamp forest in Bangladesh." },
+            { name: "Jaflong", coords: [25.1622, 92.0174], type: "Nature", color: "#10b981", desc: "Zero-point view of Indian hills." },
+            { name: "Bisnakandi", coords: [25.1838, 91.8786], type: "Nature", color: "#10b981", desc: "Breathtaking bed of stones." },
+            { name: "Lawachara Park", coords: [24.3250, 91.7833], type: "Nature", color: "#10b981", desc: "Major national park in Sreemangal." },
+            { name: "Madhabpur Lake", coords: [24.2456, 91.8975], type: "Nature", color: "#10b981", desc: "Serene lake surrounded by tea estates." },
+            { name: "Kaptai Lake", coords: [22.5632, 92.2238], type: "Nature", color: "#10b981", desc: "Largest man-made lake in Bangladesh." },
+            { name: "Cox's Bazar", coords: [21.4272, 91.9712], type: "Beach", color: "#3b82f6", desc: "Longest natural unbroken sea beach." },
+            { name: "St. Martin's Island", coords: [20.6272, 92.3226], type: "Beach", color: "#3b82f6", desc: "Coral island with crystal blue water." },
+            { name: "Kuakata", coords: [21.8167, 90.1167], type: "Beach", color: "#3b82f6", desc: "Daughter of the Sea." },
+            { name: "Patenga Beach", coords: [22.2356, 91.7962], type: "Beach", color: "#3b82f6", desc: "Popular sea beach near Chittagong." },
+            { name: "Sajek Valley", coords: [23.3820, 92.2938], type: "Hill", color: "#f59e0b", desc: "Queen of Hills, famous for clouds." },
+            { name: "Nilgiri", coords: [21.9592, 92.3372], type: "Hill", color: "#f59e0b", desc: "Hill resort above the clouds." },
+            { name: "Boga Lake", coords: [21.9776, 92.5272], type: "Hill", color: "#f59e0b", desc: "Legendary deep blue lake." },
+            { name: "Nafakhum", coords: [21.6333, 92.4500], type: "Hill", color: "#f59e0b", desc: "Niagara of Bangladesh." },
+            { name: "Lalbagh Fort", coords: [23.7195, 90.3881], type: "Heritage", color: "#ef4444", desc: "17th-century Mughal fort." },
+            { name: "Ahsan Manzil", coords: [23.7086, 90.4060], type: "Heritage", color: "#ef4444", desc: "Seat of the Nawab of Dhaka." },
+            { name: "Parliament House", coords: [23.7625, 90.3785], type: "Heritage", color: "#ef4444", desc: "Architecture by Louis Kahn." },
+            { name: "Panam City", coords: [23.6455, 90.5975], type: "Heritage", color: "#ef4444", desc: "Ancient historic city in Sonargaon." },
+            { name: "Shat Gumbad Mosque", coords: [22.6742, 89.7419], type: "Heritage", color: "#ef4444", desc: "UNESCO World Heritage site." },
+            { name: "Somapura Mahavihara", coords: [25.0300, 88.9767], type: "Heritage", color: "#ef4444", desc: "Ancient Buddhist monastery." },
+            { name: "Mahasthangarh", coords: [24.9608, 89.3447], type: "Heritage", color: "#ef4444", desc: "Earliest urban archaeological site." },
+            { name: "Puthia Temple", coords: [24.3722, 88.8356], type: "Heritage", color: "#ef4444", desc: "Historic Hindu temples." },
+            { name: "Tanguar Haor", coords: [25.1480, 91.0694], type: "Nature", color: "#10b981", desc: "A unique wetland ecosystem in Sunamganj." },
+            { name: "Mainamati", coords: [23.4283, 91.1228], type: "Heritage", color: "#ef4444", desc: "Ancient Buddhist archaeological site in Comilla." },
+            { name: "Nijhum Dwip", coords: [22.0417, 91.0081], type: "Nature", color: "#10b981", desc: "A small island known for deer and migratory birds." },
+            { name: "Kantajew Temple", coords: [25.7962, 88.6647], type: "Heritage", color: "#ef4444", desc: "Famous terracotta temple in Dinajpur." },
+            { name: "Chimbuk Hill", coords: [22.0667, 92.3667], type: "Hill", color: "#f59e0b", desc: "Third highest mountain in Bangladesh." },
+            { name: "Keokradong", coords: [21.9667, 92.5167], type: "Hill", color: "#f59e0b", desc: "A peak in Bandarban, popular for trekking." },
+            { name: "Foy's Lake", coords: [22.3681, 91.7861], type: "Nature", color: "#10b981", desc: "Man-made lake in Chittagong with amusement park." },
+            { name: "Sonadia Island", coords: [21.5167, 91.9000], type: "Beach", color: "#3b82f6", desc: "A small island near Cox's Bazar known for sea turtles." },
+            { name: "Varendra Museum", coords: [24.3683, 88.5956], type: "Heritage", color: "#ef4444", desc: "Oldest museum in Bangladesh located in Rajshahi." },
+            { name: "Bangabandhu Safari Park", coords: [24.1547, 90.3892], type: "Nature", color: "#10b981", desc: "Wildlife safari park in Gazipur." },
+            { name: "Inani Beach", coords: [21.1928, 92.0526], type: "Beach", color: "#3b82f6", desc: "Coral beach famous for its rock formations." },
+            { name: "Tajhat Palace", coords: [25.7277, 89.2788], type: "Heritage", color: "#ef4444", desc: "Historical palace in Rangpur." },
+            { name: "Guliakhali Beach", coords: [22.6083, 91.6167], type: "Beach", color: "#3b82f6", desc: "Scenic beach in Sitakunda with green grass." },
+            { name: "Shuvolong Waterfall", coords: [22.7292, 92.2667], type: "Hill", color: "#f59e0b", desc: "Beautiful waterfall in Rangamati accessible by boat." },
+            { name: "Lalon Akhra", coords: [23.9100, 89.1378], type: "Heritage", color: "#ef4444", desc: "Shrine of Lalon Fakir in Kushtia." },
+            { name: "Floating Guava Market", coords: [22.7383, 90.2177], type: "Nature", color: "#10b981", desc: "Unique floating market in the canals of Barisal." },
+            { name: "Golden Temple", coords: [22.2236, 92.1906], type: "Heritage", color: "#ef4444", desc: "Buddha Dhatu Jadi, a stunning golden temple in Bandarban." },
+            { name: "Srimangal Tea Gardens", coords: [24.3065, 91.7296], type: "Nature", color: "#10b981", desc: "Endless rolling hills of tea plantations." },
+            { name: "Shahjalal Mazar", coords: [24.9036, 91.8699], type: "Heritage", color: "#ef4444", desc: "Shrine of Sufi saint Shah Jalal in Sylhet." },
+            { name: "Nikli Haor", coords: [24.3200, 90.9500], type: "Nature", color: "#10b981", desc: "Vast wetland area popular for boat rides, especially in monsoon." },
+            { name: "Birishiri", coords: [25.1500, 90.6667], type: "Nature", color: "#10b981", desc: "Famous for its turquoise blue lake and ceramic hills." },
+            { name: "Amiakhum Waterfall", coords: [21.6500, 92.4333], type: "Hill", color: "#f59e0b", desc: "One of the most beautiful waterfalls near Thanchi." },
+            { name: "Dream Holiday Park", coords: [23.9200, 90.7000], type: "Nature", color: "#10b981", desc: "Large theme park in Narsingdi." },
+            { name: "Bhawal National Park", coords: [24.0958, 90.4069], type: "Nature", color: "#10b981", desc: "Dense Sal forest and protected area in Gazipur." },
+            { name: "Garo Hills", coords: [25.2000, 90.2000], type: "Hill", color: "#f59e0b", desc: "Scenic hills bordering India in Sherpur." },
+            { name: "Hardinge Bridge", coords: [24.0683, 89.0300], type: "Heritage", color: "#ef4444", desc: "Historic railway bridge over the Padma River." },
+            { name: "Mujibnagar Complex", coords: [23.6461, 88.6086], type: "Heritage", color: "#ef4444", desc: "Historic memorial complex in Meherpur." },
+            { name: "Durgasagar Dighi", coords: [22.7667, 90.2833], type: "Nature", color: "#10b981", desc: "Large historic pond in Barisal with an island in the center." },
+            { name: "Ramsagar", coords: [25.5450, 88.6217], type: "Nature", color: "#10b981", desc: "Largest man-made pond in Bangladesh located in Dinajpur." }
+        ];
+
+        // --- Map Initialization (Same as before) ---
+        const darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; CARTO',
+            subdomains: 'abcd',
+            maxZoom: 20
+        });
+        const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap',
+            maxZoom: 19
+        });
+        const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri',
+            maxZoom: 17
+        });
+
+        const map = L.map('map', {
+            zoomControl: false,
+            minZoom: 6,
+            layers: [darkLayer]
+        }).setView([23.8103, 90.4125], 7);
+
+        const baseMaps = { "Dark Mode": darkLayer, "Street View": streetLayer, "Satellite": satelliteLayer };
+        L.control.layers(baseMaps).addTo(map);
+        L.control.zoom({ position: 'topright' }).addTo(map);
+
+        // --- GeoJSON Borders (Same as before) ---
+        let countryLayer, divisionLayer;
+        function getBorderStyle(feature, type) {
+            let isDark = map.hasLayer(darkLayer);
+            if (type === 'country') {
+                return { color: isDark ? '#ffffff' : '#00008b', weight: 0, opacity: 0.8, fillColor: 'transparent', fillOpacity: 0 };
+            } else if (type === 'division') {
+                return { color: isDark ? '#aaaaaa' : '#444444', weight: 0, opacity: 0.4, fillOpacity: 0 };
+            }
+        }
+        fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries/BGD.geo.json')
+            .then(res => res.json())
+            .then(data => { countryLayer = L.geoJSON(data, { style: (f) => getBorderStyle(f, 'country'), pane: 'tilePane' }).addTo(map); countryLayer.bringToBack(); });
+        fetch('https://raw.githubusercontent.com/shakibs7/bangladesh-geojson/master/bangladesh_divisions.geojson')
+            .then(res => res.json())
+            .then(data => { divisionLayer = L.geoJSON(data, { style: (f) => getBorderStyle(f, 'division'), pane: 'tilePane', interactive: false }).addTo(map); });
+        map.on('baselayerchange', function() {
+            if(countryLayer) countryLayer.setStyle((f) => getBorderStyle(f, 'country'));
+            if(divisionLayer) divisionLayer.setStyle((f) => getBorderStyle(f, 'division'));
+        });
+
+        // --- State Management ---
+        let currentOrigin = { name: "Dhaka", lat: 23.8103, lng: 90.4125 };
+        let journeyWaypoints = [];
+        let originMarker = null;
+        let routingControl = null;
+        let suggestionMarkers = [];
+        let isPickingMode = false;
+        let pickModeType = null;
+        let currentSuggestions = []; 
+        let selectedSuggestionIndex = -1;
+        let currentDestSuggestions = [];
+        let selectedDestIndex = -1;
+        let currentRouteCoords = null;
+
+        // Layer Group for Tourist Spots
+        const touristLayer = L.layerGroup().addTo(map);
+        const markers = {}; // Keep ref for easy access
+
+        const listContainer = document.getElementById('location-list');
+        const journeyListEl = document.getElementById('journey-list');
+        const journeyPanel = document.getElementById('journey-panel');
+        const journeyStatsEl = document.getElementById('journey-stats');
+        const nearbyToggle = document.getElementById('nearbyToggle');
+        const attractionsToggle = document.getElementById('attractionsToggle');
+        const pickToast = document.getElementById('pickToast');
+        const journeyControls = document.getElementById('journey-controls');
+        const mobileCenterPin = document.getElementById('mobileCenterPin');
+        const mobileConfirmBtn = document.getElementById('mobileConfirmBtn');
+        const splashScreen = document.getElementById('courtesySplash');
+
+        // --- Splash Screen Logic ---
+        window.onload = () => {
+            setTimeout(() => {
+                splashScreen.classList.add('opacity-0', 'translate-y-4'); // Add slight downward drift
+                setTimeout(() => {
+                    splashScreen.style.display = 'none';
+                }, 1000);
+            }, 3000); // 3 seconds splash
+        };
+        
+        // --- Sidebar Toggle Logic (Fixed) ---
+        // Toggle logic for the hamburger button
+        function toggleMobileSidebar() {
+            if (sidebar.classList.contains('-translate-x-[110%]')) {
+                sidebar.classList.remove('-translate-x-[110%]'); // Open
+            } else {
+                sidebar.classList.add('-translate-x-[110%]'); // Close
+            }
+        }
+        
+        // Helper to force open (used after confirm)
+        function openMobileSidebar() {
+            sidebar.classList.remove('-translate-x-[110%]');
+        }
+        
+        function closeMobileSidebar() {
+            sidebar.classList.add('-translate-x-[110%]');
+        }
+
+        // Attach listeners to Open Button
+        const openBtn = document.getElementById('openSidebar');
+        openBtn.addEventListener('click', toggleMobileSidebar); // Changed to toggle
+        openBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault(); // Prevent double-firing on some touch devices
+            toggleMobileSidebar();
+        });
+
+        // Attach listeners to Close Button
+        const closeBtn = document.getElementById('closeSidebar');
+        closeBtn.addEventListener('click', closeMobileSidebar);
+        
+        // --- Sidebar Toggle ---
+        function toggleSidebarBody() {
+            const body = document.getElementById('sidebar-body');
+            const icon = document.getElementById('toggleIcon');
+            const sidebar = document.getElementById('sidebar');
+            const header = document.getElementById('sidebar-header');
+            
+            if (body.classList.contains('max-h-0')) {
+                // Expand
+                body.classList.remove('max-h-0');
+                body.classList.add('flex-1');
+                icon.style.transform = 'rotate(0deg)';
+                header.classList.add('border-b'); // Show line
+            } else {
+                // Collapse
+                body.classList.add('max-h-0');
+                body.classList.remove('flex-1');
+                icon.style.transform = 'rotate(180deg)';
+                header.classList.remove('border-b'); // Hide line
+            }
+        }
+
+        function toggleJourneyPanel() {
+            const panel = document.getElementById('journey-panel');
+            panel.classList.toggle('hidden');
+            if (!panel.classList.contains('hidden')) {
+                panel.scrollIntoView({behavior: 'smooth', block: 'nearest'});
+            }
+        }
+
+        // --- Attractions Toggle Logic ---
+        attractionsToggle.addEventListener('change', (e) => {
+            if(e.target.checked) {
+                map.addLayer(touristLayer);
+            } else {
+                map.removeLayer(touristLayer);
+            }
+            refreshJourneyMarkersVisibility();
+        });
+
+        function refreshJourneyMarkersVisibility() {
+            // If attractions are hidden, we need to ensure journey points are still shown
+            // But wait, `markers` are references to layers in `touristLayer`.
+            // If `touristLayer` is removed, all are removed.
+            // We need separate markers for the journey if we want them independent.
+            // However, `updateRoute` doesn't draw destination markers, it draws the line.
+            // Let's leave it as is: If you hide tourist spots, they hide. You still see the route line.
+            // The start point (originMarker) is separate and stays.
+        }
+
+        // --- Export/Import Logic ---
+        function exportJourney() {
+            if (journeyWaypoints.length < 1) {
+                alert("Journey is empty. Add some destinations first.");
+                return;
+            }
+            const data = { origin: currentOrigin, waypoints: journeyWaypoints, timestamp: new Date().toISOString() };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = `pathfinder_bd_journey_${new Date().getTime()}.json`;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+        }
+
+        function importJourney(input) {
+            const file = input.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.origin && Array.isArray(data.waypoints)) {
+                        currentOrigin = data.origin; journeyWaypoints = data.waypoints;
+                        document.getElementById('originInput').value = currentOrigin.name;
+                        updateOriginMarker(); updateRoute(); updateJourneyUI(); updateAllPopups();
+                        const panel = document.getElementById('journey-panel'); if(panel.classList.contains('hidden')) toggleJourneyPanel();
+                        input.value = '';
+                    } else { alert("Invalid journey file format."); }
+                } catch (err) { console.error(err); alert("Error reading file. Please check if it's a valid JSON."); }
+            };
+            reader.readAsText(file);
+        }
+
+        // --- Filter Scroll Logic ---
+        const filterContainer = document.getElementById('filterContainer');
+        document.getElementById('scrollLeft').onclick = () => filterContainer.scrollBy({left: -100, behavior: 'smooth'});
+        document.getElementById('scrollRight').onclick = () => filterContainer.scrollBy({left: 100, behavior: 'smooth'});
+        let isDown = false; let startX; let scrollLeft;
+        filterContainer.addEventListener('mousedown', (e) => { isDown = true; filterContainer.classList.add('active'); startX = e.pageX - filterContainer.offsetLeft; scrollLeft = filterContainer.scrollLeft; });
+        filterContainer.addEventListener('mouseleave', () => { isDown = false; filterContainer.classList.remove('active'); });
+        filterContainer.addEventListener('mouseup', () => { isDown = false; filterContainer.classList.remove('active'); });
+        filterContainer.addEventListener('mousemove', (e) => { if (!isDown) return; e.preventDefault(); const x = e.pageX - filterContainer.offsetLeft; const walk = (x - startX) * 2; filterContainer.scrollLeft = scrollLeft - walk; });
+
+        // --- Picking Logic (Mobile & Desktop) ---
+        function enableMapPick(type) {
+            isPickingMode = true;
+            pickModeType = type;
+            
+            if (window.innerWidth < 768) {
+                // Mobile Mode
+                closeMobileSidebar(); // Close panel
+                mobileCenterPin.classList.remove('hidden');
+                mobileConfirmBtn.classList.remove('hidden');
+            } else {
+                // Desktop Mode
+                document.getElementById('map').classList.add('cursor-map-pick');
+                pickToast.classList.remove('hidden');
+            }
+        }
+
+        // Reusable function for location selection logic
+        function processLocationSelection(lat, lng) {
+            // Visual feedback
+            if(pickModeType === 'start') document.getElementById('originInput').value = "Locating...";
+            else document.getElementById('destSearchInput').value = "Locating...";
+
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+                .then(res => res.json())
+                .then(data => {
+                    let name = data.address.city || data.address.town || data.address.village || data.display_name.split(',')[0];
+                    if(!name) name = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+
+                    if (pickModeType === 'start') {
+                        currentOrigin = { name, lat, lng };
+                        document.getElementById('originInput').value = name;
+                        updateOriginMarker();
+                        if(journeyWaypoints.length > 0) { journeyWaypoints[0] = { name, lat, lng }; updateRoute(); updateJourneyUI(); }
+                    } else {
+                        addCustomDestination(name, [lat, lng]);
+                        document.getElementById('destSearchInput').value = "";
+                    }
+                })
+                .catch(() => {
+                    // Fallback
+                    const name = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+                    if (pickModeType === 'start') { currentOrigin = { name, lat, lng }; document.getElementById('originInput').value = name; updateOriginMarker(); } 
+                    else { addCustomDestination(name, [lat, lng]); }
+                })
+                .finally(() => {
+                    isPickingMode = false;
+                    // Clean up Desktop UI
+                    document.getElementById('map').classList.remove('cursor-map-pick');
+                    pickToast.classList.add('hidden');
+                    // Clean up Mobile UI
+                    mobileCenterPin.classList.add('hidden');
+                    mobileConfirmBtn.classList.add('hidden');
+                    
+                    // Re-open sidebar on mobile if needed
+                    if(window.innerWidth < 768) openMobileSidebar();
+                });
+        }
+
+        // Desktop Click Handler
+        map.on('click', function(e) {
+            // Disable click picking on mobile or if picking mode not active
+            if (!isPickingMode || window.innerWidth < 768) return;
+            processLocationSelection(e.latlng.lat, e.latlng.lng);
+        });
+
+        // Mobile Confirm Button Handler
+        mobileConfirmBtn.addEventListener('click', () => {
+            const center = map.getCenter();
+            processLocationSelection(center.lat, center.lng);
+        });
+
+        // --- Search Logics (Origin & Dest) ---
+        // (Keeping search logic condensed but identical)
+        const originInput = document.getElementById('originInput');
+        const suggestionsBox = document.getElementById('suggestions-box');
+        const resetOriginBtn = document.getElementById('resetOrigin');
+        let originSearchTimeout;
+        originInput.addEventListener('input', (e) => {
+            const val = e.target.value; clearTimeout(originSearchTimeout); suggestionsBox.innerHTML = ''; selectedSuggestionIndex = -1;
+            if(val.length < 2) { suggestionsBox.style.display = 'none'; return; }
+            originSearchTimeout = setTimeout(() => {
+                const localMatches = districts.filter(d => d.name.toLowerCase().includes(val.toLowerCase())).map(d => ({ ...d, desc: 'District' }));
+                fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${val}&countrycodes=bd&limit=5`)
+                    .then(res => res.json()).then(data => {
+                        const remoteMatches = data.map(place => ({ name: place.display_name.split(',')[0], lat: parseFloat(place.lat), lng: parseFloat(place.lon), desc: place.display_name, isRemote: true }));
+                        currentSuggestions = [...localMatches, ...remoteMatches]; suggestionsBox.innerHTML = '';
+                        if(currentSuggestions.length > 0) {
+                            suggestionsBox.style.display = 'block';
+                            currentSuggestions.forEach((match, index) => {
+                                const div = document.createElement('div'); div.className = 'suggestion-item text-gray-300 cursor-pointer border-b border-gray-800 last:border-0'; div.setAttribute('data-index', index);
+                                div.innerHTML = `<div class="suggestion-text-main font-bold text-white text-xs">${match.name}</div><div class="suggestion-text-sub text-[10px] text-gray-500 truncate">${match.desc}</div>`;
+                                div.onclick = () => setOrigin(match); suggestionsBox.appendChild(div);
+                            });
+                        } else { suggestionsBox.style.display = 'none'; }
+                    }).catch(err => { /* Fallback */ });
+            }, 300);
+        });
+        originInput.addEventListener('keydown', (e) => {
+            if (suggestionsBox.style.display === 'none') return;
+            const items = suggestionsBox.getElementsByClassName('suggestion-item');
+            if (e.key === 'ArrowDown') { e.preventDefault(); selectedSuggestionIndex++; if (selectedSuggestionIndex >= items.length) selectedSuggestionIndex = 0; updateSuggestionHighlight(items); } 
+            else if (e.key === 'ArrowUp') { e.preventDefault(); selectedSuggestionIndex--; if (selectedSuggestionIndex < 0) selectedSuggestionIndex = items.length - 1; updateSuggestionHighlight(items); } 
+            else if (e.key === 'Enter') { e.preventDefault(); if (selectedSuggestionIndex > -1 && currentSuggestions[selectedSuggestionIndex]) { setOrigin(currentSuggestions[selectedSuggestionIndex]); } }
+        });
+        function updateSuggestionHighlight(items) { Array.from(items).forEach(item => item.classList.remove('suggestion-active')); if (selectedSuggestionIndex > -1 && items[selectedSuggestionIndex]) { items[selectedSuggestionIndex].classList.add('suggestion-active'); items[selectedSuggestionIndex].scrollIntoView({ block: 'nearest' }); } }
+
+        function setOrigin(district) {
+            currentOrigin = district; originInput.value = district.name; suggestionsBox.style.display = 'none'; resetOriginBtn.classList.remove('hidden');
+            if(journeyWaypoints.length === 0) {} else { journeyWaypoints[0] = { name: district.name, lat: district.lat, lng: district.lng }; updateRoute(); updateJourneyUI(); }
+            updateOriginMarker();
+        }
+        
+        function updateOriginMarker() {
+            if(originMarker) map.removeLayer(originMarker);
+            originMarker = L.marker([currentOrigin.lat, currentOrigin.lng], { draggable: true, icon: L.divIcon({ className: 'origin-icon', html: `<div class="w-4 h-4 bg-blue-500 border-2 border-white rounded-full shadow cursor-move hover:scale-125 transition-transform"></div>` }) }).addTo(map);
+            originMarker.on('dragend', function(event) {
+                const position = event.target.getLatLng(); originInput.value = "Locating..."; currentOrigin.lat = position.lat; currentOrigin.lng = position.lng;
+                fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.lat}&lon=${position.lng}`)
+                    .then(res => res.json()).then(data => {
+                        let name = data.address.city || data.address.town || data.address.village || data.display_name.split(',')[0] || "Custom Location";
+                        currentOrigin.name = name; originInput.value = name; resetOriginBtn.classList.remove('hidden');
+                        if(journeyWaypoints.length > 0) { journeyWaypoints[0] = { name: name, lat: position.lat, lng: position.lng }; updateRoute(); updateJourneyUI(); }
+                    }).catch(err => { const coordName = `${position.lat.toFixed(3)}, ${position.lng.toFixed(3)}`; currentOrigin.name = coordName; originInput.value = coordName; if(journeyWaypoints.length > 0) { journeyWaypoints[0] = { name: coordName, lat: position.lat, lng: position.lng }; updateRoute(); updateJourneyUI(); } });
+            });
+        }
+        resetOriginBtn.onclick = () => { setOrigin({ name: "Dhaka", lat: 23.8103, lng: 90.4125 }); originInput.value = ""; resetOriginBtn.classList.add('hidden'); };
+
+        // --- Custom Dest Search ---
+        const destInput = document.getElementById('destSearchInput');
+        const destSuggestionsBox = document.getElementById('dest-suggestions-box');
+        const destLoading = document.getElementById('destLoading');
+        let destSearchTimeout;
+        destInput.addEventListener('input', (e) => {
+            const query = e.target.value; clearTimeout(destSearchTimeout); selectedDestIndex = -1;
+            if(query.length < 3) { destSuggestionsBox.style.display = 'none'; return; }
+            destSearchTimeout = setTimeout(() => {
+                destLoading.classList.remove('hidden');
+                fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}&countrycodes=bd&limit=5`)
+                    .then(res => res.json()).then(data => {
+                        destLoading.classList.add('hidden'); destSuggestionsBox.innerHTML = ''; currentDestSuggestions = data;
+                        if(data.length > 0) {
+                            destSuggestionsBox.style.display = 'block';
+                            data.forEach((place, index) => {
+                                const div = document.createElement('div'); div.className = 'suggestion-item text-gray-300 cursor-pointer border-b border-gray-800 last:border-0'; div.setAttribute('data-index', index);
+                                const displayName = place.display_name.split(',')[0];
+                                div.innerHTML = `<div class="suggestion-text-main font-bold text-white text-xs">${displayName}</div><div class="suggestion-text-sub text-[10px] text-gray-500 truncate">${place.display_name}</div>`;
+                                div.onclick = () => selectCustomDestination(place); destSuggestionsBox.appendChild(div);
+                            });
+                        } else { destSuggestionsBox.style.display = 'none'; }
+                    }).catch(() => destLoading.classList.add('hidden'));
+            }, 600);
+        });
+        destInput.addEventListener('keydown', (e) => {
+            if (destSuggestionsBox.style.display === 'none') return;
+            const items = destSuggestionsBox.getElementsByClassName('suggestion-item');
+            if (e.key === 'ArrowDown') { e.preventDefault(); selectedDestIndex++; if (selectedDestIndex >= items.length) selectedDestIndex = 0; updateDestSuggestionHighlight(items); } 
+            else if (e.key === 'ArrowUp') { e.preventDefault(); selectedDestIndex--; if (selectedDestIndex < 0) selectedDestIndex = items.length - 1; updateDestSuggestionHighlight(items); } 
+            else if (e.key === 'Enter') { e.preventDefault(); if (selectedDestIndex > -1 && currentDestSuggestions[selectedDestIndex]) { selectCustomDestination(currentDestSuggestions[selectedDestIndex]); } }
+        });
+        function updateDestSuggestionHighlight(items) { Array.from(items).forEach(item => item.classList.remove('suggestion-active')); if (selectedDestIndex > -1 && items[selectedDestIndex]) { items[selectedDestIndex].classList.add('suggestion-active'); items[selectedDestIndex].scrollIntoView({ block: 'nearest' }); } }
+        function selectCustomDestination(place) { const displayName = place.display_name.split(',')[0]; addCustomDestination(displayName, [parseFloat(place.lat), parseFloat(place.lon)]); destInput.value = ''; destSuggestionsBox.style.display = 'none'; currentDestSuggestions = []; selectedDestIndex = -1; }
+
+        function addCustomDestination(name, coords) {
+            const svgIcon = L.divIcon({ className: 'custom-marker', html: `<div class="marker-wrap relative w-6 h-6 flex items-center justify-center"><div class="outer-ring absolute w-full h-full rounded-full bg-purple-500 opacity-0"></div><div class="inner-dot relative w-3 h-3 rounded-full shadow-lg z-10 border-2 border-gray-900 bg-purple-500"></div></div>`, iconSize: [24, 24], iconAnchor: [12, 12] });
+            const marker = L.marker(coords, { icon: svgIcon }); // Don't add to map directly here, wait for layer check
+            // For custom added ones, we probably always want them visible initially
+            marker.addTo(map); // Custom markers are not in touristLayer usually, let's keep them independent or add to touristLayer?
+            // Let's add to map directly so they persist when tourist layer is toggled off (as they are user intent)
+            markers[name] = marker;
+            marker.bindPopup(getPopupContent({ name: name, type: 'Custom', desc: 'Added from search', coords: coords }));
+            if(journeyWaypoints.length > 0) { addToRoute(name, coords); } else { map.flyTo(coords, 12); marker.openPopup(); }
+        }
+
+        // --- Popup & UI Logic ---
+        function getPopupContent(loc) {
+            const isJourneyActive = journeyWaypoints.length > 0;
+            const isInJourney = journeyWaypoints.some(wp => wp.name === loc.name);
+            let buttonsHtml = '';
+            if (isInJourney) {
+                const index = journeyWaypoints.findIndex(wp => wp.name === loc.name);
+                buttonsHtml = `<button onclick="removeFromRoute(${index}); map.closePopup();" class="w-full bg-red-600 hover:bg-red-500 text-white text-[11px] py-2 px-3 rounded transition-colors font-bold uppercase tracking-wide shadow-lg">Remove from Journey</button>`;
+            } else if (!isJourneyActive) {
+                buttonsHtml = `<button onclick="startRoute('${loc.name}', [${loc.coords}])" class="w-full bg-green-600 hover:bg-green-500 text-white text-[11px] py-2 px-3 rounded transition-colors font-bold uppercase tracking-wide shadow-lg">Select as First Destination</button>`;
+            } else {
+                buttonsHtml = `<div class="flex flex-col gap-2"><button onclick="addToRoute('${loc.name}', [${loc.coords}])" class="w-full bg-blue-600 hover:bg-blue-500 text-white text-[11px] py-2 px-3 rounded transition-colors font-bold uppercase tracking-wide shadow-lg">Add to Next Stop</button><button onclick="startRoute('${loc.name}', [${loc.coords}])" class="w-full text-gray-500 hover:text-gray-300 text-[10px] py-1 rounded transition-colors font-medium">(Reset & Start Here Instead)</button></div>`;
+            }
+            return `<div class="text-left min-w-[180px]"><span class="text-[10px] font-bold uppercase tracking-wider ${loc.type === 'Custom' ? 'text-purple-400' : 'text-gray-400'}">${loc.type}</span><h3 class="font-bold text-lg text-white mb-1">${loc.name}</h3><p class="text-xs text-gray-300 leading-relaxed mb-4 border-b border-gray-700 pb-2">${loc.desc}</p>${buttonsHtml}</div>`;
+        }
+        function updateAllPopups() {
+            Object.keys(markers).forEach(name => {
+                const marker = markers[name];
+                let loc = locations.find(l => l.name === name);
+                if (!loc) { const latLng = marker.getLatLng(); loc = { name: name, type: 'Custom', desc: 'Custom Location', coords: [latLng.lat, latLng.lng] }; }
+                if (marker) { marker.setPopupContent(getPopupContent(loc)); }
+            });
+        }
+
+        function renderList(filterType) {
+            listContainer.innerHTML = '';
+            // Clear existing tourist layer markers
+            touristLayer.clearLayers();
+            // Clear markers ref for tourist spots (keep custom ones? Logic simplified for now to clear all tracked)
+            Object.keys(markers).forEach(k => delete markers[k]);
+            
+            updateOriginMarker();
+            const filtered = filterType === 'all' ? locations : locations.filter(l => l.type === filterType);
+            filtered.forEach(loc => {
+                const svgIcon = L.divIcon({ className: 'custom-marker', html: `<div class="marker-wrap relative w-6 h-6 flex items-center justify-center"><div class="outer-ring absolute w-full h-full rounded-full bg-current opacity-0" style="color: ${loc.color}"></div><div class="inner-dot relative w-3 h-3 rounded-full shadow-lg z-10 border-2 border-gray-900" style="background-color: ${loc.color}"></div></div>`, iconSize: [24, 24], iconAnchor: [12, 12] });
+                
+                // Add to Tourist Layer instead of Map directly
+                const marker = L.marker(loc.coords, { icon: svgIcon }).addTo(touristLayer);
+                
+                marker.bindPopup(getPopupContent(loc)); 
+                markers[loc.name] = marker;
+                const item = document.createElement('div');
+                item.className = 'group p-4 rounded-lg bg-white/5 border border-transparent hover:border-white/10 hover:bg-white/10 cursor-pointer transition-all duration-300 flex items-center gap-4';
+                item.innerHTML = `<div class="w-2 h-2 rounded-full shrink-0" style="background-color: ${loc.color}"></div><div class="overflow-hidden w-full"><div class="flex justify-between items-center"><h3 class="text-sm font-bold text-gray-200 group-hover:text-white truncate">${loc.name}</h3></div><p class="text-[10px] text-gray-500 truncate group-hover:text-gray-400">${loc.desc}</p></div>`;
+                item.addEventListener('click', () => { 
+                    map.flyTo(loc.coords, 10, { duration: 1.5 }); highlightItem(item); 
+                    // If layer hidden, temporarily add this marker? Or assume user will toggle?
+                    // For now, if hidden, they fly to empty spot. Let's force show layer?
+                    if (!map.hasLayer(touristLayer)) {
+                        map.addLayer(touristLayer);
+                        attractionsToggle.checked = true;
+                    }
+                    marker.openPopup(); 
+                    if (window.innerWidth < 768) closeMobileSidebar();
+                });
+                listContainer.appendChild(item);
+            });
+        }
+
+        // ... (Rest of logic: Journey, Route, Drag, etc. remains same) ...
+        function setBlinking(marker, active) { if(!marker) return; const el = marker.getElement(); if(el) { if(active) el.classList.add('blink-active'); else el.classList.remove('blink-active'); } }
+        function resetBlinking() { Object.values(markers).forEach(m => setBlinking(m, false)); if(originMarker) setBlinking(originMarker, false); }
+        function showJourneyPanel() { const panel = document.getElementById('journey-panel'); if (panel.classList.contains('hidden')) { panel.classList.remove('hidden'); panel.scrollIntoView({behavior: 'smooth', block: 'nearest'}); } }
+        window.startRoute = function(name, coords) { journeyWaypoints = [ { name: currentOrigin.name, lat: currentOrigin.lat, lng: currentOrigin.lng }, { name: name, lat: coords[0], lng: coords[1] } ]; updateRoute(); updateJourneyUI(); updateAllPopups(); map.closePopup(); showJourneyPanel(); };
+        window.addToRoute = function(name, coords) { if (journeyWaypoints.length === 0) { journeyWaypoints.push({ name: currentOrigin.name, lat: currentOrigin.lat, lng: currentOrigin.lng }); } if (!journeyWaypoints.some(wp => wp.name === name)) { journeyWaypoints.push({ name: name, lat: coords[0], lng: coords[1] }); } updateRoute(); updateJourneyUI(); updateAllPopups(); map.closePopup(); showJourneyPanel(); };
+        window.optimizeRoute = function() { if (journeyWaypoints.length <= 2) return; const startPoint = journeyWaypoints[0]; let unvisited = journeyWaypoints.slice(1); let sorted = [startPoint]; let current = startPoint; while (unvisited.length > 0) { let nearest = null; let minDist = Infinity; let nearestIndex = -1; unvisited.forEach((wp, index) => { const dist = map.distance([current.lat, current.lng], [wp.lat, wp.lng]); if (dist < minDist) { minDist = dist; nearest = wp; nearestIndex = index; } }); if (nearest) { sorted.push(nearest); current = nearest; unvisited.splice(nearestIndex, 1); } } journeyWaypoints = sorted; updateRoute(); updateJourneyUI(); };
+        window.removeFromRoute = function(index) { if (index < 0 || index >= journeyWaypoints.length) return; journeyWaypoints.splice(index, 1); if (journeyWaypoints.length === 0) { clearRoute(); } else { if (index === 0) { const newStart = journeyWaypoints[0]; currentOrigin = { name: newStart.name, lat: newStart.lat, lng: newStart.lng }; originInput.value = newStart.name; updateOriginMarker(); } updateRoute(); updateJourneyUI(); updateAllPopups(); } };
+        function updateRoute() { if(routingControl) map.removeControl(routingControl); clearSuggestions(); resetBlinking(); journeyStatsEl.classList.add('hidden'); if(journeyWaypoints.length < 2) return; journeyWaypoints.forEach((wp, index) => { if(index === 0) { setBlinking(originMarker, true); } else { const m = markers[wp.name]; if(m) setBlinking(m, true); } }); const waypoints = journeyWaypoints.map(wp => L.latLng(wp.lat, wp.lng)); routingControl = L.Routing.control({ waypoints: waypoints, router: L.Routing.osrmv1({ serviceUrl: 'https://router.project-osrm.org/route/v1', profile: 'driving' }), lineOptions: { styles: [{color: '#10b981', opacity: 0.7, weight: 5, className: 'animate-pulse'}] }, show: false, addWaypoints: false, draggableWaypoints: false, fitSelectedRoutes: true, createMarker: function() { return null; } }).on('routesfound', function(e) { const route = e.routes[0]; currentRouteCoords = route.coordinates; const distMeters = route.summary.totalDistance; const distKm = (distMeters / 1000).toFixed(1); const totalMinutes = Math.round((distMeters / 1000 / 60) * 60); const formatTime = (mins) => `${Math.floor(mins / 60)}h ${mins % 60}m`; journeyStatsEl.innerHTML = `<div class="col-span-2 flex justify-between items-end"><span class="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Total Distance</span><span class="font-bold text-white text-lg">${distKm} <span class="text-xs text-gray-400">km</span></span></div><div class="flex flex-col"><span class="text-[10px] text-gray-500 uppercase font-bold tracking-wider">One Way</span><span class="font-bold text-green-400 text-base">${formatTime(totalMinutes)}</span></div><div class="flex flex-col text-right"><span class="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Round Trip</span><span class="font-bold text-blue-400 text-base">${formatTime(totalMinutes * 2)}</span></div><div class="col-span-2 text-[9px] text-gray-600 text-center mt-1 italic border-t border-gray-800 pt-1">*Estimated travel time based on avg speed of 60 km/h</div>`; journeyStatsEl.classList.remove('hidden'); if(nearbyToggle.checked) { findNearbyPlaces(currentRouteCoords); } }).addTo(map); }
+        let dragStartIndex = -1;
+        function updateJourneyUI() { journeyListEl.innerHTML = ''; if(journeyWaypoints.length === 0) { journeyListEl.innerHTML = `<div class="flex flex-col items-center justify-center py-4 border-2 border-dashed border-gray-700 rounded text-gray-500"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mb-1 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg><span class="text-[10px] font-medium">Your journey is empty</span><span class="text-[9px] opacity-70">Add destinations from the map</span></div>`; journeyControls.classList.remove('opacity-100'); return; } journeyControls.classList.add('opacity-100'); journeyWaypoints.forEach((wp, index) => { const div = document.createElement('div'); div.className = 'itinerary-item flex items-center justify-between gap-2 text-xs text-gray-300 group w-full py-1 px-2 rounded hover:bg-white/5 transition-colors'; if (index > 0) { div.classList.add('draggable-item'); div.setAttribute('draggable', 'true'); div.setAttribute('data-index', index); div.addEventListener('dragstart', (e) => { dragStartIndex = index; e.dataTransfer.effectAllowed = 'move'; div.style.opacity = '0.5'; }); div.addEventListener('dragend', (e) => { div.style.opacity = '1'; document.querySelectorAll('.itinerary-item').forEach(item => item.classList.remove('drag-over')); }); div.addEventListener('dragover', (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; const targetIndex = parseInt(div.getAttribute('data-index')); if (targetIndex > 0 && targetIndex !== dragStartIndex) div.classList.add('drag-over'); }); div.addEventListener('dragleave', () => div.classList.remove('drag-over')); div.addEventListener('drop', (e) => { e.preventDefault(); const dropIndex = parseInt(div.getAttribute('data-index')); if (dragStartIndex > 0 && dropIndex > 0 && dragStartIndex !== dropIndex) { const itemToMove = journeyWaypoints[dragStartIndex]; journeyWaypoints.splice(dragStartIndex, 1); journeyWaypoints.splice(dropIndex, 0, itemToMove); updateRoute(); updateJourneyUI(); } }); } const gripIcon = index > 0 ? `<div class="cursor-grab text-gray-600 mr-1" title="Drag to reorder">⋮⋮</div>` : `<div class="w-3 mr-1"></div>`; div.innerHTML = `<div class="flex items-center gap-2 overflow-hidden">${gripIcon}<div class="itinerary-dot w-2 h-2 rounded-full shrink-0 ${index === 0 ? 'bg-blue-500' : 'bg-green-500'}"></div><span class="truncate">${wp.name}</span></div><button onclick="removeFromRoute(${index})" class="text-gray-600 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" title="Remove"><svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>`; journeyListEl.appendChild(div); }); }
+        
+        window.clearRoute = function() { if (routingControl) { map.removeControl(routingControl); routingControl = null; } journeyWaypoints = []; currentRouteCoords = null; updateJourneyUI(); journeyStatsEl.classList.add('hidden'); clearSuggestions(); resetBlinking(); updateAllPopups(); map.flyTo([23.8103, 90.4125], 7); }
+        function highlightItem(selectedItem) { Array.from(listContainer.children).forEach(c => { c.classList.remove('bg-white/20', 'border-white/20'); c.classList.add('bg-white/5'); }); selectedItem.classList.remove('bg-white/5'); selectedItem.classList.add('bg-white/20', 'border-white/20'); }
+        const filterStyles = { 'all': { active: 'bg-gray-900 text-white font-bold shadow-[0_0_15px_rgba(255,255,255,0.5)] border-2 border-white', inactive: 'bg-gray-800/50 text-gray-300 hover:bg-gray-800 hover:text-white' }, 'Nature': { active: 'bg-[#10b981] text-white font-bold shadow-[0_0_15px_#10b981] border-2 border-white', inactive: 'bg-[#10b981]/20 text-[#10b981] hover:bg-[#10b981]/30' }, 'Beach': { active: 'bg-[#3b82f6] text-white font-bold shadow-[0_0_15px_#3b82f6] border-2 border-white', inactive: 'bg-[#3b82f6]/20 text-[#3b82f6] hover:bg-[#3b82f6]/30' }, 'Hill': { active: 'bg-[#f59e0b] text-white font-bold shadow-[0_0_15px_#f59e0b] border-2 border-white', inactive: 'bg-[#f59e0b]/20 text-[#f59e0b] hover:bg-[#f59e0b]/30' }, 'Heritage': { active: 'bg-[#ef4444] text-white font-bold shadow-[0_0_15px_#ef4444] border-2 border-white', inactive: 'bg-[#ef4444]/20 text-[#ef4444] hover:bg-[#ef4444]/30' } };
+        function filterLocations(type) { renderList(type); document.querySelectorAll('#filterContainer button').forEach(btn => { const btnType = btn.getAttribute('onclick').match(/'([^']+)'/)[1]; const style = filterStyles[btnType]; const btnText = btn.innerText.replace('✓ ', ''); btn.className = "whitespace-nowrap text-[10px] px-3 py-1 rounded-full transition-all shrink-0 border border-transparent flex items-center gap-1"; if (btnType === type) { btn.className += " " + style.active; btn.innerHTML = `✓ ${btnText}`; } else { btn.className += " " + style.inactive; btn.innerHTML = btnText; } }); }
+        
+        // --- Restored Logic for Nearby and ClearSuggestions ---
+        nearbyToggle.addEventListener('change', (e) => {
+            if(e.target.checked) {
+                if(currentRouteCoords) {
+                    findNearbyPlaces(currentRouteCoords);
+                }
+            } else {
+                clearSuggestions();
+            }
+        });
+
+        function findNearbyPlaces(routeCoords) {
+            const nearbyInfo = document.getElementById('nearby-info');
+            const sampledRoute = routeCoords.filter((_, i) => i % 25 === 0);
+            
+            let foundCount = 0;
+            const journeyNames = journeyWaypoints.map(wp => wp.name);
+
+            clearSuggestions(); 
+
+            locations.forEach(loc => {
+                if(journeyNames.includes(loc.name)) return;
+
+                const isClose = sampledRoute.some(p => {
+                    const dist = map.distance([p.lat, p.lng], loc.coords);
+                    return dist < 30000; 
+                });
+
+                if(isClose) {
+                    foundCount++;
+                    const sm = L.marker(loc.coords, {
+                        icon: L.divIcon({
+                            className: 'suggestion-marker',
+                            html: `
+                                <div class="relative w-4 h-4 flex items-center justify-center">
+                                    <div class="w-3 h-3 rounded-full shadow-sm" style="background-color: ${loc.color}"></div>
+                                    <div class="absolute w-3 h-3 rounded-full bg-white opacity-0 suggestion-blink"></div>
+                                </div>
+                            `,
+                            iconSize: [16, 16],
+                            iconAnchor: [8, 8]
+                        })
+                    }).addTo(map).bindPopup(`
+                        <div class="text-center">
+                            <strong class="text-yellow-500 text-xs uppercase">Nearby</strong><br/>
+                            <b>${loc.name}</b><br/>
+                            <button onclick="addToRoute('${loc.name}', [${loc.coords}])" class="mt-1 text-[10px] underline text-blue-300">Add to Journey</button>
+                        </div>
+                    `);
+                    suggestionMarkers.push(sm);
+                }
+            });
+
+            if(foundCount > 0) {
+                nearbyInfo.classList.remove('hidden');
+                nearbyInfo.querySelector('p').innerHTML = `<span class="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></span> Found ${foundCount} attractions along your route!`;
+            } else {
+                nearbyInfo.classList.add('hidden');
+            }
+        }
+
+        function clearSuggestions() {
+            suggestionMarkers.forEach(m => map.removeLayer(m));
+            suggestionMarkers = [];
+            document.getElementById('nearby-info').classList.add('hidden');
+        }
+
+        const sidebar = document.getElementById('sidebar'); 
+        
+        // --- Corrected Mobile Sidebar Events ---
+        // Wait for DOM content to be fully loaded (though script at end handles this mostly)
+        // The issue was likely duplicate event listeners or missing element references if not careful
+        // Let's attach events cleanly.
+        
+        // Open Logic
+        document.getElementById('openSidebar').addEventListener('click', (e) => {
+            e.preventDefault(); // Prevent default touch/click behavior issues
+            toggleMobileSidebar();
+        });
+        
+        // Close Logic
+        document.getElementById('closeSidebar').addEventListener('click', (e) => {
+            e.preventDefault();
+            closeMobileSidebar();
+        });
+
+        renderList('all'); 
+        updateJourneyUI();
+    </script>
+</body>
+</html>
