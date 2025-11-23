@@ -5,46 +5,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PathfinderBD</title>
     
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
      crossorigin=""/>
     
-    <!-- Leaflet Routing Machine CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
 
-    <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
      crossorigin=""></script>
      
-    <!-- Leaflet Routing Machine JS -->
     <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
 
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;600&display=swap" rel="stylesheet">
 
     <style>
         body, html { height: 100%; margin: 0; background-color: #0a0a0a; font-family: 'Space Grotesk', sans-serif; overflow: hidden; }
         #map { height: 100%; width: 100%; z-index: 0; background: #1a1a1a; }
         
-        /* Dark Scrollbar */
         .custom-scroll::-webkit-scrollbar { width: 4px; }
         .custom-scroll::-webkit-scrollbar-track { background: #1a1a1a; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
         .custom-scroll::-webkit-scrollbar-thumb:hover { background: #00e676; }
 
-        /* Glassmorphism Panel */
         .glass-panel {
             background: rgba(10, 10, 10, 0.85);
             backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
-        /* Blinking Animation Class (Applied Dynamically) */
         .blink-active .inner-dot {
             animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
         }
@@ -61,7 +52,6 @@
             50% { opacity: .5; }
         }
 
-        /* Suggestion Blinking White Overlay */
         @keyframes blink-white {
             0%, 100% { opacity: 0; transform: scale(1); }
             50% { opacity: 1; transform: scale(1.3); }
@@ -70,7 +60,6 @@
             animation: blink-white 2s infinite;
         }
 
-        /* Popup Customization */
         .leaflet-popup-content-wrapper {
             background: rgba(20, 20, 20, 0.95);
             backdrop-filter: blur(5px);
@@ -88,7 +77,6 @@
             color: #fff;
         }
         
-        /* Leaflet Control Customization (Matched to UI) */
         .leaflet-control-layers,
         .leaflet-bar {
             border: none !important;
@@ -105,7 +93,6 @@
             transition: all 0.2s ease;
         }
 
-        /* Zoom Control Grouping fixes */
         .leaflet-bar a {
             border-radius: 0 !important;
         }
@@ -125,7 +112,6 @@
             color: #00e676 !important;
         }
 
-        /* Layer Control Content */
         .leaflet-control-layers-expanded {
             background: rgba(10, 10, 10, 0.95) !important;
             padding: 12px !important;
@@ -135,12 +121,10 @@
             border-radius: 12px !important;
         }
         
-        /* Hide default routing container text */
         .leaflet-routing-container {
             display: none;
         }
 
-        /* Autocomplete Dropdown */
         .suggestions-box-style {
             display: none;
             position: absolute;
@@ -161,22 +145,21 @@
         }
         .suggestion-item:hover {
             background: #00e676;
-            color: #000 !important; /* Forced black text on hover */
+            color: #000 !important; 
         }
         
         .suggestion-active {
             background: #00e676;
-            color: #000 !important; /* Forced black text on active/keyboard selection */
+            color: #000 !important; 
         }
 
-        /* Suggestion Text Specifics for Custom Search */
         .suggestion-item:hover .suggestion-text-main,
         .suggestion-active .suggestion-text-main {
             color: #000 !important;
         }
         .suggestion-item:hover .suggestion-text-sub,
         .suggestion-active .suggestion-text-sub {
-            color: #333 !important; /* Dark grey for subtitle to contrast with black main text */
+            color: #333 !important; 
         }
 
         .itinerary-dot {
@@ -196,7 +179,6 @@
             display: none;
         }
         
-        /* Hide scrollbar for horizontal scrolling */
         .scrollbar-hide::-webkit-scrollbar {
             display: none;
         }
@@ -205,7 +187,6 @@
             scrollbar-width: none;
         }
 
-        /* Draggable Container Styles */
         #filterContainer {
             cursor: grab;
             user-select: none;
@@ -214,7 +195,6 @@
             cursor: grabbing;
         }
 
-        /* Draggable List Items */
         .draggable-item {
             cursor: grab;
         }
@@ -226,12 +206,10 @@
             background: rgba(0, 230, 118, 0.1);
         }
         
-        /* Sidebar transition */
         #sidebar {
             transition: transform 0.5s ease-out, max-height 0.3s ease;
         }
 
-        /* Custom Cursor for Map Picking (Desktop) */
         .cursor-map-pick {
             cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 24 24'%3E%3Cpath d='M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zM12 11.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z' fill='%2300e676' stroke='%23ffffff' stroke-width='2' shadow='0 2px 4px rgba(0,0,0,0.5)'/%3E%3C/svg%3E") 16 32, crosshair !important;
         }
@@ -239,39 +217,31 @@
 </head>
 <body class="text-gray-200">
 
-    <!-- Splash Screen (Courtesy Panel) - Simplified -->
     <div id="courtesySplash" class="fixed bottom-10 left-1/2 transform -translate-x-1/2 z-[5000] transition-all duration-1000 opacity-100 pointer-events-none select-none">
         <div class="bg-black/80 backdrop-blur-xl border border-gray-700/50 px-6 py-3 rounded-full shadow-2xl text-center">
             <p class="text-[10px] text-gray-300 uppercase tracking-[0.2em] font-medium whitespace-nowrap">Crafted by Tanvir</p>
         </div>
     </div>
 
-    <!-- Map Picking Toast (Desktop) -->
     <div id="pickToast" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-[2000] bg-green-600 text-white px-4 py-2 rounded-full shadow-lg text-xs font-bold uppercase tracking-widest hidden animate-bounce">
         Click on map to select location
     </div>
 
-    <!-- Mobile Picking UI -->
-    <!-- Center Pin (Fixed) -->
     <div id="mobileCenterPin" class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[1500] pointer-events-none hidden transition-all duration-200">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-green-500 drop-shadow-2xl" viewBox="0 0 24 24" fill="currentColor">
             <path fill-rule="evenodd" d="M11.54 22.351l.07.04.028.016a.76.76 0 00.723 0l.028-.015.071-.041a16.975 16.975 0 001.144-.742 19.58 19.58 0 002.683-2.282c1.944-1.99 3.963-4.98 3.963-8.827a8.25 8.25 0 00-16.5 0c0 3.846 2.02 6.837 3.963 8.827a19.58 19.58 0 002.682 2.282 16.975 16.975 0 001.145.742zM12 13.5a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" />
         </svg>
         <div class="w-1 h-1 bg-black/50 rounded-full absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1 blur-[1px]"></div>
     </div>
-    <!-- Confirm Button (Mobile) -->
     <button id="mobileConfirmBtn" class="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-[2000] bg-green-600 text-white px-8 py-3 rounded-full shadow-[0_0_20px_rgba(0,230,118,0.4)] font-bold uppercase tracking-wide hidden hover:bg-green-500 transition-all active:scale-95 flex items-center gap-2">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
         Confirm Location
     </button>
 
-    <!-- Sidebar (Floating Panel) -->
     <div id="sidebar" class="absolute top-4 left-4 w-80 z-[1000] transform transition-transform duration-500 ease-out -translate-x-[110%] md:translate-x-0 shadow-2xl flex flex-col glass-panel rounded-2xl max-h-[calc(100vh-2rem)]">
         
-        <!-- Header (Always Visible) -->
         <div id="sidebar-header" class="p-5 border-b border-gray-800 shrink-0 flex justify-between items-center md:items-start transition-colors duration-300">
             <div class="flex-1 text-center md:text-left pr-8 md:pr-0">
-                <!-- Updated Title with Gradient Style -->
                 <h1 class="text-2xl font-black tracking-tighter flex items-center justify-center md:justify-start gap-1 uppercase" style="font-family: 'Space Grotesk', sans-serif;">
                     <span class="text-white">PATHFINDER</span>
                     <span class="bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-blue-500 to-pink-500">BD</span>
@@ -280,14 +250,12 @@
             </div>
             
             <div class="flex gap-2 absolute right-5 top-5 md:static">
-                <!-- Collapse Toggle (Desktop) -->
                 <button id="toggleSidebarContent" onclick="toggleSidebarBody()" class="hidden md:block text-gray-400 hover:text-white transition-colors p-1">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transform transition-transform duration-300" id="toggleIcon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
                     </svg>
                 </button>
                 
-                <!-- Close Sidebar (Mobile) -->
                 <button id="closeSidebar" class="md:hidden text-gray-400 hover:text-white transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -296,19 +264,15 @@
             </div>
         </div>
 
-        <!-- Collapsible Content Body -->
         <div id="sidebar-body" class="flex-1 flex flex-col overflow-y-auto custom-scroll transition-all duration-300">
             
-            <!-- Controls Container -->
             <div class="p-5 pt-3 border-b border-gray-800 shrink-0">
-                <!-- Origin Search -->
                 <div class="relative mb-3">
                     <label class="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Start Journey From</label>
                     <div class="relative flex gap-1">
                         <input type="text" id="originInput" placeholder="Search District (Default: Dhaka)" 
                                class="w-full bg-white/5 border border-gray-700 rounded-l px-3 py-2 text-sm text-white focus:outline-none focus:border-green-500 transition-colors">
                         
-                        <!-- Map Pick Button -->
                         <button onclick="enableMapPick('start')" class="bg-gray-800 hover:bg-green-600 text-gray-300 hover:text-white px-3 border border-gray-700 rounded-r transition-colors" title="Pick on Map">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                                 <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
@@ -324,21 +288,18 @@
                     <div id="suggestions-box" class="suggestions-box-style custom-scroll"></div>
                 </div>
 
-                <!-- Custom Destination Search -->
                 <div class="relative mb-4">
                     <label class="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Add Custom Destination</label>
                     <div class="relative flex gap-1">
                         <input type="text" id="destSearchInput" placeholder="Search place (e.g. Uttara)" 
                                class="w-full bg-white/5 border border-gray-700 rounded-l px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors placeholder-gray-600">
                         
-                        <!-- Map Pick Button -->
                         <button onclick="enableMapPick('dest')" class="bg-gray-800 hover:bg-blue-600 text-gray-300 hover:text-white px-3 border border-gray-700 rounded-r transition-colors" title="Pick on Map">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                                 <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
                             </svg>
                         </button>
 
-                        <!-- Loading Spinner -->
                         <div id="destLoading" class="absolute right-12 top-2.5 hidden">
                             <svg class="animate-spin h-4 w-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -349,58 +310,49 @@
                     <div id="dest-suggestions-box" class="suggestions-box-style custom-scroll"></div>
                 </div>
                 
-                <!-- Open Destination Panel Box (Now targets Journey Panel) -->
-                <button onclick="toggleJourneyPanel()" class="w-full mb-4 p-3 bg-gradient-to-r from-gray-800 to-gray-900 border border-gray-700 rounded-lg flex items-center justify-between group hover:border-green-500 transition-all shadow-lg relative overflow-hidden">
-                    <div class="absolute inset-0 bg-green-500/10 translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-500"></div>
-                    <div class="relative flex items-center gap-3">
-                        <div class="bg-green-500/20 p-2 rounded-md text-green-400 group-hover:text-white group-hover:bg-green-500 transition-colors">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                            </svg>
+                <!-- Unified Journey Accordion -->
+                <div id="journey-panel" class="w-full mb-4 bg-gradient-to-r from-gray-800 to-gray-900 border border-gray-700 rounded-lg overflow-hidden transition-all shadow-lg group hover:border-green-500">
+                    <!-- Header / Trigger -->
+                    <div onclick="toggleJourneyPanel()" class="p-3 flex items-center justify-between cursor-pointer relative select-none">
+                        <div class="absolute inset-0 bg-green-500/10 translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-500"></div>
+                        <div class="relative flex items-center gap-3">
+                            <div class="bg-green-500/20 p-2 rounded-md text-green-400 group-hover:text-white group-hover:bg-green-500 transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                                </svg>
+                            </div>
+                            <div class="text-left">
+                                <span class="block text-[10px] text-gray-400 uppercase tracking-wider font-bold">Plan</span>
+                                <span class="block text-sm font-bold text-white">Current Journey</span>
+                            </div>
                         </div>
-                        <div class="text-left">
-                            <span class="block text-[10px] text-gray-400 uppercase tracking-wider font-bold">View Plan</span>
-                            <span class="block text-sm font-bold text-white">Current Journey</span>
-                        </div>
+                        <svg id="journey-chevron" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-500 group-hover:text-white transform transition-transform duration-300 relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
                     </div>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-500 group-hover:text-white transform group-hover:translate-y-1 transition-all relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                </button>
 
-                <!-- Current Journey Panel (Hidden by default) -->
-                <div id="journey-panel" class="hidden mb-4 p-3 bg-white/5 rounded border border-green-500/30 transition-all">
-                    <div class="flex justify-between items-center mb-2">
-                        <h3 class="text-xs font-bold text-green-400 uppercase">Current Journey</h3>
-                        <div class="flex gap-1 opacity-0 transition-opacity duration-300" id="journey-controls">
-                             <button onclick="optimizeRoute()" class="text-blue-400 hover:text-blue-300 p-1 rounded hover:bg-blue-500/20" title="Optimize Route">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                            </button>
-                            <!-- Export JSON -->
-                            <button onclick="exportJourney()" class="text-gray-400 hover:text-white p-1 rounded hover:bg-gray-700" title="Export Journey">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                </svg>
-                            </button>
-                            <!-- Import JSON -->
-                            <button onclick="document.getElementById('importFile').click()" class="text-gray-400 hover:text-white p-1 rounded hover:bg-gray-700" title="Import Journey">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                                </svg>
-                            </button>
-                            <input type="file" id="importFile" hidden accept=".json" onchange="importJourney(this)">
-                            
-                            <button onclick="clearRoute()" class="text-red-400 hover:text-red-300 p-1 rounded hover:bg-red-500/20" title="Reset">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                            </button>
+                    <!-- Body / Content -->
+                    <div id="journey-content" class="hidden border-t border-gray-700/50 p-3 bg-black/20 backdrop-blur-sm">
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="text-[10px] font-bold text-green-400 uppercase tracking-wider">Itinerary</h3>
+                            <div class="flex gap-1 opacity-0 transition-opacity duration-300" id="journey-controls">
+                                <button onclick="optimizeRoute()" class="text-blue-400 hover:text-blue-300 p-1 rounded hover:bg-blue-500/20" title="Optimize Route">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                                </button>
+                                <button onclick="exportJourney()" class="text-gray-400 hover:text-white p-1 rounded hover:bg-gray-700" title="Export Journey">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                                </button>
+                                <button onclick="document.getElementById('importFile').click()" class="text-gray-400 hover:text-white p-1 rounded hover:bg-gray-700" title="Import Journey">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                                </button>
+                                <input type="file" id="importFile" hidden accept=".json" onchange="importJourney(this)">
+                                <button onclick="clearRoute()" class="text-red-400 hover:text-red-300 p-1 rounded hover:bg-red-500/20" title="Reset">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                    <div id="journey-list" class="space-y-1 max-h-32 overflow-y-auto custom-scroll mb-3">
-                        <!-- Injected by JS -->
-                    </div>
-                    <!-- Journey Stats -->
-                    <div id="journey-stats" class="hidden pt-3 border-t border-gray-700 text-gray-300 grid grid-cols-2 gap-x-4 gap-y-2">
-                        <!-- Injected by JS -->
+                        <div id="journey-list" class="space-y-1 max-h-32 overflow-y-auto custom-scroll mb-3"></div>
+                        <div id="journey-stats" class="hidden pt-3 border-t border-gray-700 text-gray-300 grid grid-cols-2 gap-x-4 gap-y-2"></div>
                     </div>
                 </div>
 
@@ -413,15 +365,10 @@
                     </button>
                     
                     <div id="filterContainer" class="flex gap-2 overflow-x-auto scrollbar-hide scroll-smooth w-full px-1">
-                        <!-- Buttons updated with specific colors -->
                         <button onclick="filterLocations('all')" class="whitespace-nowrap text-[10px] px-3 py-1 rounded-full bg-white text-black font-bold transition-all shrink-0 shadow-[0_0_10px_rgba(255,255,255,0.3)]">All</button>
-                        
                         <button onclick="filterLocations('Nature')" class="whitespace-nowrap text-[10px] px-3 py-1 rounded-full bg-[#10b981]/20 text-[#10b981] hover:bg-[#10b981]/30 transition-all shrink-0 border border-transparent">Nature</button>
-                        
                         <button onclick="filterLocations('Beach')" class="whitespace-nowrap text-[10px] px-3 py-1 rounded-full bg-[#3b82f6]/20 text-[#3b82f6] hover:bg-[#3b82f6]/30 transition-all shrink-0 border border-transparent">Beach</button>
-                        
                         <button onclick="filterLocations('Hill')" class="whitespace-nowrap text-[10px] px-3 py-1 rounded-full bg-[#f59e0b]/20 text-[#f59e0b] hover:bg-[#f59e0b]/30 transition-all shrink-0 border border-transparent">Hill</button>
-                        
                         <button onclick="filterLocations('Heritage')" class="whitespace-nowrap text-[10px] px-3 py-1 rounded-full bg-[#ef4444]/20 text-[#ef4444] hover:bg-[#ef4444]/30 transition-all shrink-0 border border-transparent">Heritage</button>
                     </div>
                     
@@ -431,17 +378,15 @@
                         </svg>
                     </button>
                 </div>
-                
                 <!-- Toggle: Suggest Nearby -->
                  <div class="flex items-center justify-between mt-3">
                     <span class="text-[10px] text-gray-400">Suggest Attractions</span>
                     <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="nearbyToggle" class="sr-only peer">
+                        <input type="checkbox" id="nearbyToggle" class="sr-only peer" checked>
                         <div class="w-7 h-4 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-green-600"></div>
                     </label>
                 </div>
 
-                <!-- Toggle: Show Attractions -->
                  <div class="flex items-center justify-between mt-2 mb-2">
                     <span class="text-[10px] text-gray-400">Show Tourist Spots</span>
                     <label class="relative inline-flex items-center cursor-pointer">
@@ -451,7 +396,6 @@
                 </div>
             </div>
 
-            <!-- Suggestions Info Panel -->
             <div id="nearby-info" class="hidden bg-indigo-900/30 border-b border-indigo-500/30 p-3">
                 <p class="text-xs text-indigo-200 flex items-center gap-2">
                     <span class="w-2 h-2 bg-indigo-400 rounded-full animate-pulse"></span>
@@ -459,26 +403,26 @@
                 </p>
             </div>
 
-            <!-- Location List -->
             <div class="p-4 space-y-2" id="location-list">
-                <!-- Items injected by JS -->
+            </div>
+
+            <div class="p-4 border-t border-gray-800 text-center shrink-0 bg-black/20 backdrop-blur-sm mt-auto">
+                <p class="text-[10px] text-gray-500 font-medium tracking-widest uppercase opacity-70 hover:opacity-100 transition-opacity">
+                    Crafted by Tanvir
+                </p>
             </div>
         </div>
     </div>
 
-    <!-- Mobile Toggle -->
-    <button id="openSidebar" class="absolute top-4 left-4 z-[3000] bg-black/50 backdrop-blur text-white p-2 rounded-full border border-gray-700 md:hidden hover:bg-green-600/20 hover:text-green-400 transition-all shadow-lg cursor-pointer">
+    <button id="openSidebar" onclick="toggleMobileSidebar()" class="absolute top-4 left-4 z-[3000] bg-black/50 backdrop-blur text-white p-2 rounded-full border border-gray-700 md:hidden hover:bg-green-600/20 hover:text-green-400 transition-all shadow-lg cursor-pointer">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
         </svg>
     </button>
 
-    <!-- Map -->
     <div id="map"></div>
 
     <script>
-        // ... existing code ... (Districts, Locations, Map Init, GeoJSON)
-        // --- Data: 64 Districts for Search ---
         const districts = [
             {name: "Dhaka", lat: 23.8103, lng: 90.4125}, {name: "Chittagong", lat: 22.3569, lng: 91.7832}, {name: "Khulna", lat: 22.8456, lng: 89.5403}, {name: "Rajshahi", lat: 24.3636, lng: 88.6241},
             {name: "Barisal", lat: 22.7010, lng: 90.3535}, {name: "Sylhet", lat: 24.8949, lng: 91.8687}, {name: "Rangpur", lat: 25.7439, lng: 89.2752}, {name: "Mymensingh", lat: 24.7471, lng: 90.4203},
@@ -498,9 +442,7 @@
             {name: "Sirajganj", lat: 24.4534, lng: 89.7008}, {name: "Sunamganj", lat: 25.0658, lng: 91.3950}, {name: "Thakurgaon", lat: 26.0337, lng: 88.4617}
         ];
 
-        // --- Data: Tourist Destinations (Expanded) ---
         const locations = [
-            // ... (Keeping all existing locations)
             { name: "Sundarbans", coords: [21.9497, 89.1833], type: "Nature", color: "#10b981", desc: "World's largest mangrove forest." },
             { name: "Ratargul Swamp", coords: [25.0034, 91.9331], type: "Nature", color: "#10b981", desc: "The only freshwater swamp forest in Bangladesh." },
             { name: "Jaflong", coords: [25.1622, 92.0174], type: "Nature", color: "#10b981", desc: "Zero-point view of Indian hills." },
@@ -555,7 +497,6 @@
             { name: "Ramsagar", coords: [25.5450, 88.6217], type: "Nature", color: "#10b981", desc: "Largest man-made pond in Bangladesh located in Dinajpur." }
         ];
 
-        // --- Map Initialization (Same as before) ---
         const darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
             attribution: '&copy; CARTO',
             subdomains: 'abcd',
@@ -580,7 +521,6 @@
         L.control.layers(baseMaps).addTo(map);
         L.control.zoom({ position: 'topright' }).addTo(map);
 
-        // --- GeoJSON Borders (Same as before) ---
         let countryLayer, divisionLayer;
         function getBorderStyle(feature, type) {
             let isDark = map.hasLayer(darkLayer);
@@ -601,7 +541,6 @@
             if(divisionLayer) divisionLayer.setStyle((f) => getBorderStyle(f, 'division'));
         });
 
-        // --- State Management ---
         let currentOrigin = { name: "Dhaka", lat: 23.8103, lng: 90.4125 };
         let journeyWaypoints = [];
         let originMarker = null;
@@ -615,13 +554,11 @@
         let selectedDestIndex = -1;
         let currentRouteCoords = null;
 
-        // Layer Group for Tourist Spots
         const touristLayer = L.layerGroup().addTo(map);
-        const markers = {}; // Keep ref for easy access
+        const markers = {}; 
 
         const listContainer = document.getElementById('location-list');
         const journeyListEl = document.getElementById('journey-list');
-        const journeyPanel = document.getElementById('journey-panel');
         const journeyStatsEl = document.getElementById('journey-stats');
         const nearbyToggle = document.getElementById('nearbyToggle');
         const attractionsToggle = document.getElementById('attractionsToggle');
@@ -630,79 +567,96 @@
         const mobileCenterPin = document.getElementById('mobileCenterPin');
         const mobileConfirmBtn = document.getElementById('mobileConfirmBtn');
         const splashScreen = document.getElementById('courtesySplash');
+        const sidebar = document.getElementById('sidebar');
 
-        // --- Splash Screen Logic ---
         window.onload = () => {
             setTimeout(() => {
-                splashScreen.classList.add('opacity-0', 'translate-y-4'); // Add slight downward drift
+                splashScreen.classList.add('opacity-0', 'translate-y-4'); 
                 setTimeout(() => {
                     splashScreen.style.display = 'none';
                 }, 1000);
-            }, 3000); // 3 seconds splash
+            }, 3000); 
         };
         
-        // --- Sidebar Toggle Logic (Fixed) ---
-        // Toggle logic for the hamburger button
         function toggleMobileSidebar() {
             if (sidebar.classList.contains('-translate-x-[110%]')) {
-                sidebar.classList.remove('-translate-x-[110%]'); // Open
+                openMobileSidebar();
             } else {
-                sidebar.classList.add('-translate-x-[110%]'); // Close
+                closeMobileSidebar();
             }
         }
         
-        // Helper to force open (used after confirm)
         function openMobileSidebar() {
             sidebar.classList.remove('-translate-x-[110%]');
+            document.getElementById('openSidebar').classList.add('hidden');
         }
         
         function closeMobileSidebar() {
             sidebar.classList.add('-translate-x-[110%]');
+            document.getElementById('openSidebar').classList.remove('hidden');
         }
 
-        // Attach listeners to Open Button
         const openBtn = document.getElementById('openSidebar');
-        openBtn.addEventListener('click', toggleMobileSidebar); // Changed to toggle
+        openBtn.addEventListener('click', (e) => {
+            e.preventDefault(); 
+            toggleMobileSidebar();
+        });
         openBtn.addEventListener('touchstart', (e) => {
-            e.preventDefault(); // Prevent double-firing on some touch devices
+            e.preventDefault(); 
             toggleMobileSidebar();
         });
 
-        // Attach listeners to Close Button
         const closeBtn = document.getElementById('closeSidebar');
-        closeBtn.addEventListener('click', closeMobileSidebar);
+        closeBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            closeMobileSidebar();
+        });
         
-        // --- Sidebar Toggle ---
         function toggleSidebarBody() {
             const body = document.getElementById('sidebar-body');
             const icon = document.getElementById('toggleIcon');
-            const sidebar = document.getElementById('sidebar');
             const header = document.getElementById('sidebar-header');
             
             if (body.classList.contains('max-h-0')) {
-                // Expand
                 body.classList.remove('max-h-0');
                 body.classList.add('flex-1');
                 icon.style.transform = 'rotate(0deg)';
-                header.classList.add('border-b'); // Show line
+                header.classList.add('border-b');
             } else {
-                // Collapse
                 body.classList.add('max-h-0');
                 body.classList.remove('flex-1');
                 icon.style.transform = 'rotate(180deg)';
-                header.classList.remove('border-b'); // Hide line
+                header.classList.remove('border-b');
             }
         }
 
         function toggleJourneyPanel() {
-            const panel = document.getElementById('journey-panel');
-            panel.classList.toggle('hidden');
-            if (!panel.classList.contains('hidden')) {
-                panel.scrollIntoView({behavior: 'smooth', block: 'nearest'});
+            const content = document.getElementById('journey-content');
+            const chevron = document.getElementById('journey-chevron');
+            const wrapper = document.getElementById('journey-panel');
+            
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                chevron.classList.add('rotate-180');
+                wrapper.scrollIntoView({behavior: 'smooth', block: 'center'});
+            } else {
+                content.classList.add('hidden');
+                chevron.classList.remove('rotate-180');
+            }
+        }
+        
+        function showJourneyPanel() {
+            const content = document.getElementById('journey-content');
+            const chevron = document.getElementById('journey-chevron');
+            const wrapper = document.getElementById('journey-panel');
+            
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                chevron.classList.add('rotate-180');
+                wrapper.scrollIntoView({behavior: 'smooth', block: 'center'});
             }
         }
 
-        // --- Attractions Toggle Logic ---
         attractionsToggle.addEventListener('change', (e) => {
             if(e.target.checked) {
                 map.addLayer(touristLayer);
@@ -713,16 +667,8 @@
         });
 
         function refreshJourneyMarkersVisibility() {
-            // If attractions are hidden, we need to ensure journey points are still shown
-            // But wait, `markers` are references to layers in `touristLayer`.
-            // If `touristLayer` is removed, all are removed.
-            // We need separate markers for the journey if we want them independent.
-            // However, `updateRoute` doesn't draw destination markers, it draws the line.
-            // Let's leave it as is: If you hide tourist spots, they hide. You still see the route line.
-            // The start point (originMarker) is separate and stays.
         }
 
-        // --- Export/Import Logic ---
         function exportJourney() {
             if (journeyWaypoints.length < 1) {
                 alert("Journey is empty. Add some destinations first.");
@@ -745,7 +691,7 @@
                         currentOrigin = data.origin; journeyWaypoints = data.waypoints;
                         document.getElementById('originInput').value = currentOrigin.name;
                         updateOriginMarker(); updateRoute(); updateJourneyUI(); updateAllPopups();
-                        const panel = document.getElementById('journey-panel'); if(panel.classList.contains('hidden')) toggleJourneyPanel();
+                        showJourneyPanel();
                         input.value = '';
                     } else { alert("Invalid journey file format."); }
                 } catch (err) { console.error(err); alert("Error reading file. Please check if it's a valid JSON."); }
@@ -753,7 +699,6 @@
             reader.readAsText(file);
         }
 
-        // --- Filter Scroll Logic ---
         const filterContainer = document.getElementById('filterContainer');
         document.getElementById('scrollLeft').onclick = () => filterContainer.scrollBy({left: -100, behavior: 'smooth'});
         document.getElementById('scrollRight').onclick = () => filterContainer.scrollBy({left: 100, behavior: 'smooth'});
@@ -763,26 +708,21 @@
         filterContainer.addEventListener('mouseup', () => { isDown = false; filterContainer.classList.remove('active'); });
         filterContainer.addEventListener('mousemove', (e) => { if (!isDown) return; e.preventDefault(); const x = e.pageX - filterContainer.offsetLeft; const walk = (x - startX) * 2; filterContainer.scrollLeft = scrollLeft - walk; });
 
-        // --- Picking Logic (Mobile & Desktop) ---
         function enableMapPick(type) {
             isPickingMode = true;
             pickModeType = type;
             
             if (window.innerWidth < 768) {
-                // Mobile Mode
-                closeMobileSidebar(); // Close panel
+                closeMobileSidebar(); 
                 mobileCenterPin.classList.remove('hidden');
                 mobileConfirmBtn.classList.remove('hidden');
             } else {
-                // Desktop Mode
                 document.getElementById('map').classList.add('cursor-map-pick');
                 pickToast.classList.remove('hidden');
             }
         }
 
-        // Reusable function for location selection logic
         function processLocationSelection(lat, lng) {
-            // Visual feedback
             if(pickModeType === 'start') document.getElementById('originInput').value = "Locating...";
             else document.getElementById('destSearchInput').value = "Locating...";
 
@@ -803,40 +743,33 @@
                     }
                 })
                 .catch(() => {
-                    // Fallback
                     const name = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
                     if (pickModeType === 'start') { currentOrigin = { name, lat, lng }; document.getElementById('originInput').value = name; updateOriginMarker(); } 
                     else { addCustomDestination(name, [lat, lng]); }
                 })
                 .finally(() => {
                     isPickingMode = false;
-                    // Clean up Desktop UI
                     document.getElementById('map').classList.remove('cursor-map-pick');
                     pickToast.classList.add('hidden');
-                    // Clean up Mobile UI
                     mobileCenterPin.classList.add('hidden');
                     mobileConfirmBtn.classList.add('hidden');
                     
-                    // Re-open sidebar on mobile if needed
-                    if(window.innerWidth < 768) openMobileSidebar();
+                    if(window.innerWidth < 768 && pickModeType === 'start') {
+                        openMobileSidebar();
+                    }
                 });
         }
 
-        // Desktop Click Handler
         map.on('click', function(e) {
-            // Disable click picking on mobile or if picking mode not active
             if (!isPickingMode || window.innerWidth < 768) return;
             processLocationSelection(e.latlng.lat, e.latlng.lng);
         });
 
-        // Mobile Confirm Button Handler
         mobileConfirmBtn.addEventListener('click', () => {
             const center = map.getCenter();
             processLocationSelection(center.lat, center.lng);
         });
 
-        // --- Search Logics (Origin & Dest) ---
-        // (Keeping search logic condensed but identical)
         const originInput = document.getElementById('originInput');
         const suggestionsBox = document.getElementById('suggestions-box');
         const resetOriginBtn = document.getElementById('resetOrigin');
@@ -858,7 +791,7 @@
                                 div.onclick = () => setOrigin(match); suggestionsBox.appendChild(div);
                             });
                         } else { suggestionsBox.style.display = 'none'; }
-                    }).catch(err => { /* Fallback */ });
+                    }).catch(err => { });
             }, 300);
         });
         originInput.addEventListener('keydown', (e) => {
@@ -891,7 +824,6 @@
         }
         resetOriginBtn.onclick = () => { setOrigin({ name: "Dhaka", lat: 23.8103, lng: 90.4125 }); originInput.value = ""; resetOriginBtn.classList.add('hidden'); };
 
-        // --- Custom Dest Search ---
         const destInput = document.getElementById('destSearchInput');
         const destSuggestionsBox = document.getElementById('dest-suggestions-box');
         const destLoading = document.getElementById('destLoading');
@@ -928,16 +860,15 @@
 
         function addCustomDestination(name, coords) {
             const svgIcon = L.divIcon({ className: 'custom-marker', html: `<div class="marker-wrap relative w-6 h-6 flex items-center justify-center"><div class="outer-ring absolute w-full h-full rounded-full bg-purple-500 opacity-0"></div><div class="inner-dot relative w-3 h-3 rounded-full shadow-lg z-10 border-2 border-gray-900 bg-purple-500"></div></div>`, iconSize: [24, 24], iconAnchor: [12, 12] });
-            const marker = L.marker(coords, { icon: svgIcon }); // Don't add to map directly here, wait for layer check
-            // For custom added ones, we probably always want them visible initially
-            marker.addTo(map); // Custom markers are not in touristLayer usually, let's keep them independent or add to touristLayer?
-            // Let's add to map directly so they persist when tourist layer is toggled off (as they are user intent)
+            const marker = L.marker(coords, { icon: svgIcon }); 
+            
+            marker.addTo(map); 
+            
             markers[name] = marker;
             marker.bindPopup(getPopupContent({ name: name, type: 'Custom', desc: 'Added from search', coords: coords }));
             if(journeyWaypoints.length > 0) { addToRoute(name, coords); } else { map.flyTo(coords, 12); marker.openPopup(); }
         }
 
-        // --- Popup & UI Logic ---
         function getPopupContent(loc) {
             const isJourneyActive = journeyWaypoints.length > 0;
             const isInJourney = journeyWaypoints.some(wp => wp.name === loc.name);
@@ -963,9 +894,7 @@
 
         function renderList(filterType) {
             listContainer.innerHTML = '';
-            // Clear existing tourist layer markers
             touristLayer.clearLayers();
-            // Clear markers ref for tourist spots (keep custom ones? Logic simplified for now to clear all tracked)
             Object.keys(markers).forEach(k => delete markers[k]);
             
             updateOriginMarker();
@@ -973,7 +902,6 @@
             filtered.forEach(loc => {
                 const svgIcon = L.divIcon({ className: 'custom-marker', html: `<div class="marker-wrap relative w-6 h-6 flex items-center justify-center"><div class="outer-ring absolute w-full h-full rounded-full bg-current opacity-0" style="color: ${loc.color}"></div><div class="inner-dot relative w-3 h-3 rounded-full shadow-lg z-10 border-2 border-gray-900" style="background-color: ${loc.color}"></div></div>`, iconSize: [24, 24], iconAnchor: [12, 12] });
                 
-                // Add to Tourist Layer instead of Map directly
                 const marker = L.marker(loc.coords, { icon: svgIcon }).addTo(touristLayer);
                 
                 marker.bindPopup(getPopupContent(loc)); 
@@ -983,8 +911,6 @@
                 item.innerHTML = `<div class="w-2 h-2 rounded-full shrink-0" style="background-color: ${loc.color}"></div><div class="overflow-hidden w-full"><div class="flex justify-between items-center"><h3 class="text-sm font-bold text-gray-200 group-hover:text-white truncate">${loc.name}</h3></div><p class="text-[10px] text-gray-500 truncate group-hover:text-gray-400">${loc.desc}</p></div>`;
                 item.addEventListener('click', () => { 
                     map.flyTo(loc.coords, 10, { duration: 1.5 }); highlightItem(item); 
-                    // If layer hidden, temporarily add this marker? Or assume user will toggle?
-                    // For now, if hidden, they fly to empty spot. Let's force show layer?
                     if (!map.hasLayer(touristLayer)) {
                         map.addLayer(touristLayer);
                         attractionsToggle.checked = true;
@@ -996,10 +922,9 @@
             });
         }
 
-        // ... (Rest of logic: Journey, Route, Drag, etc. remains same) ...
         function setBlinking(marker, active) { if(!marker) return; const el = marker.getElement(); if(el) { if(active) el.classList.add('blink-active'); else el.classList.remove('blink-active'); } }
         function resetBlinking() { Object.values(markers).forEach(m => setBlinking(m, false)); if(originMarker) setBlinking(originMarker, false); }
-        function showJourneyPanel() { const panel = document.getElementById('journey-panel'); if (panel.classList.contains('hidden')) { panel.classList.remove('hidden'); panel.scrollIntoView({behavior: 'smooth', block: 'nearest'}); } }
+        function showJourneyPanel() { const content = document.getElementById('journey-content'); const chevron = document.getElementById('journey-chevron'); const wrapper = document.getElementById('journey-panel'); if (content.classList.contains('hidden')) { content.classList.remove('hidden'); chevron.classList.add('rotate-180'); wrapper.scrollIntoView({behavior: 'smooth', block: 'center'}); } }
         window.startRoute = function(name, coords) { journeyWaypoints = [ { name: currentOrigin.name, lat: currentOrigin.lat, lng: currentOrigin.lng }, { name: name, lat: coords[0], lng: coords[1] } ]; updateRoute(); updateJourneyUI(); updateAllPopups(); map.closePopup(); showJourneyPanel(); };
         window.addToRoute = function(name, coords) { if (journeyWaypoints.length === 0) { journeyWaypoints.push({ name: currentOrigin.name, lat: currentOrigin.lat, lng: currentOrigin.lng }); } if (!journeyWaypoints.some(wp => wp.name === name)) { journeyWaypoints.push({ name: name, lat: coords[0], lng: coords[1] }); } updateRoute(); updateJourneyUI(); updateAllPopups(); map.closePopup(); showJourneyPanel(); };
         window.optimizeRoute = function() { if (journeyWaypoints.length <= 2) return; const startPoint = journeyWaypoints[0]; let unvisited = journeyWaypoints.slice(1); let sorted = [startPoint]; let current = startPoint; while (unvisited.length > 0) { let nearest = null; let minDist = Infinity; let nearestIndex = -1; unvisited.forEach((wp, index) => { const dist = map.distance([current.lat, current.lng], [wp.lat, wp.lng]); if (dist < minDist) { minDist = dist; nearest = wp; nearestIndex = index; } }); if (nearest) { sorted.push(nearest); current = nearest; unvisited.splice(nearestIndex, 1); } } journeyWaypoints = sorted; updateRoute(); updateJourneyUI(); };
@@ -1013,7 +938,6 @@
         const filterStyles = { 'all': { active: 'bg-gray-900 text-white font-bold shadow-[0_0_15px_rgba(255,255,255,0.5)] border-2 border-white', inactive: 'bg-gray-800/50 text-gray-300 hover:bg-gray-800 hover:text-white' }, 'Nature': { active: 'bg-[#10b981] text-white font-bold shadow-[0_0_15px_#10b981] border-2 border-white', inactive: 'bg-[#10b981]/20 text-[#10b981] hover:bg-[#10b981]/30' }, 'Beach': { active: 'bg-[#3b82f6] text-white font-bold shadow-[0_0_15px_#3b82f6] border-2 border-white', inactive: 'bg-[#3b82f6]/20 text-[#3b82f6] hover:bg-[#3b82f6]/30' }, 'Hill': { active: 'bg-[#f59e0b] text-white font-bold shadow-[0_0_15px_#f59e0b] border-2 border-white', inactive: 'bg-[#f59e0b]/20 text-[#f59e0b] hover:bg-[#f59e0b]/30' }, 'Heritage': { active: 'bg-[#ef4444] text-white font-bold shadow-[0_0_15px_#ef4444] border-2 border-white', inactive: 'bg-[#ef4444]/20 text-[#ef4444] hover:bg-[#ef4444]/30' } };
         function filterLocations(type) { renderList(type); document.querySelectorAll('#filterContainer button').forEach(btn => { const btnType = btn.getAttribute('onclick').match(/'([^']+)'/)[1]; const style = filterStyles[btnType]; const btnText = btn.innerText.replace('✓ ', ''); btn.className = "whitespace-nowrap text-[10px] px-3 py-1 rounded-full transition-all shrink-0 border border-transparent flex items-center gap-1"; if (btnType === type) { btn.className += " " + style.active; btn.innerHTML = `✓ ${btnText}`; } else { btn.className += " " + style.inactive; btn.innerHTML = btnText; } }); }
         
-        // --- Restored Logic for Nearby and ClearSuggestions ---
         nearbyToggle.addEventListener('change', (e) => {
             if(e.target.checked) {
                 if(currentRouteCoords) {
@@ -1080,27 +1004,7 @@
             document.getElementById('nearby-info').classList.add('hidden');
         }
 
-        const sidebar = document.getElementById('sidebar'); 
-        
-        // --- Corrected Mobile Sidebar Events ---
-        // Wait for DOM content to be fully loaded (though script at end handles this mostly)
-        // The issue was likely duplicate event listeners or missing element references if not careful
-        // Let's attach events cleanly.
-        
-        // Open Logic
-        document.getElementById('openSidebar').addEventListener('click', (e) => {
-            e.preventDefault(); // Prevent default touch/click behavior issues
-            toggleMobileSidebar();
-        });
-        
-        // Close Logic
-        document.getElementById('closeSidebar').addEventListener('click', (e) => {
-            e.preventDefault();
-            closeMobileSidebar();
-        });
-
-        renderList('all'); 
-        updateJourneyUI();
+        renderList('all'); updateJourneyUI();
     </script>
 </body>
 </html>
